@@ -1,0 +1,138 @@
+// ==============================================================================
+// Auth Schema
+// ==============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ==============================================================================
+// Enums
+// ==============================================================================
+
+enum UserStatus {
+  ACTIVE
+  DEACTIVATED
+  BANNED
+}
+
+enum UserTag {
+  HUMAN
+  BOT
+}
+
+enum EmailVerificationStatus {
+  UNVERIFIED
+  PENDING
+  VERIFIED
+}
+
+enum OAuthProvider {
+  GOOGLE
+  APPLE
+}
+
+// ==============================================================================
+// User Model
+// ==============================================================================
+
+model User {
+  id                      Int                     @id @default(autoincrement())
+  createdAt               DateTime                @default(now())
+  status                  UserStatus              @default(ACTIVE)
+  email                   String                  @unique
+  emailVerificationStatus EmailVerificationStatus @default(UNVERIFIED)
+  password                String?
+  username                String                  @unique
+  twoFaEnabled            Boolean                 @default(false)
+  oauthProvider           OAuthProvider?
+  oauthId                 String?
+  tag                     UserTag                 @default(HUMAN)
+  isActive                Boolean                 @default(false)
+  verifiedHumanAt         DateTime?
+  otpForEmailVerification String?
+
+  // Relations
+  sessions       Session[]
+  passwordReset  PasswordReset[]
+  otpsForLogin   OTPBasedLogin[]
+  devices        Device[]        @relation("devices")
+  admin          Admin?
+}
+
+// ==============================================================================
+// Session Model
+// ==============================================================================
+
+model Session {
+  id           Int       @id @default(autoincrement())
+  socketId     String?   @unique
+  twoFaSecret  String?   @unique
+  refreshToken String?   @unique
+  issuedAt     DateTime  @default(now())
+  browserName  String    @default("Unknown")
+  lastUsed     DateTime  @default(now()) @updatedAt
+  device       Device?   @relation(fields: [deviceId], references: [id])
+  deviceId     Int?
+  userId       Int
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  revokedAt    DateTime?
+
+  @@index([userId])
+  @@index([deviceId])
+}
+
+// ==============================================================================
+// Admin Model
+// ==============================================================================
+
+model Admin {
+  ip     String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId Int    @unique
+
+  @@id([userId])
+}
+
+// ==============================================================================
+// PasswordReset Model
+// ==============================================================================
+
+model PasswordReset {
+  id            String    @id @default(uuid())
+  createdAt     DateTime  @default(now())
+  userId        Int
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  invalidatedAt DateTime?
+
+  @@index([userId])
+}
+
+// ==============================================================================
+// OTPBasedLogin Model
+// ==============================================================================
+
+model OTPBasedLogin {
+  id        Int      @id @default(autoincrement())
+  code      Int
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  disabled  Boolean  @default(false)
+}
+
+// ==============================================================================
+// Device Model
+// ==============================================================================
+
+model Device {
+  id        Int       @id @default(autoincrement())
+  pushToken String    @unique
+  createdAt DateTime  @default(now())
+  users     User[]    @relation("devices")
+  sessions  Session[]
+}

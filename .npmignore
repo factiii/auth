@@ -1,0 +1,38 @@
+# Source files (we ship dist only)
+src/
+
+# Config files
+.eslintrc*
+eslint.config.*
+.prettierrc*
+tsconfig.json
+tsconfig.*.json
+
+# Tests
+**/*.test.ts
+**/*.spec.ts
+__tests__/
+coverage/
+.nyc_output/
+
+# Dev files
+.gitignore
+.editorconfig
+.vscode/
+.idea/
+
+# Build artifacts
+.turbo/
+.cache/
+*.tsbuildinfo
+
+# Docs (keep README)
+CHANGELOG.md
+CONTRIBUTING.md
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Pack artifacts
+*.tgz

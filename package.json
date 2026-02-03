@@ -1,0 +1,104 @@
+{
+  "name": "@factiii/auth",
+  "version": "1.0.0",
+  "publishConfig": {
+    "access": "public"
+  },
+  "description": "Authentication library for tRPC with JWT, OAuth, 2FA, and session management from factiii.",
+  "author": "Factiii",
+  "license": "MIT",
+  "keywords": [
+    "auth",
+    "authentication",
+    "trpc",
+    "jwt",
+    "oauth",
+    "2fa",
+    "totp",
+    "session",
+    "prisma",
+    "typescript"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/factiii/auth.git"
+  },
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "sideEffects": false,
+  "bin": {
+    "factiii-auth": "bin/init.mjs"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    },
+    "./validators": {
+      "types": "./dist/validators.d.ts",
+      "import": "./dist/validators.mjs",
+      "require": "./dist/validators.js"
+    },
+    "./prisma/schema.prisma": "./prisma/schema.prisma"
+  },
+  "files": [
+    "bin",
+    "dist",
+    "prisma",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "check-types": "tsc --noEmit",
+    "lint": "eslint src --ext .ts,.tsx",
+    "lint:fix": "eslint src --ext .ts,.tsx --fix",
+    "clean": "rm -rf dist node_modules/.cache .turbo",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "@trpc/server": "11.8.0",
+    "apple-signin-auth": "^2.0.0",
+    "bcryptjs": "^2.4.3",
+    "google-auth-library": "^10.5.0",
+    "jsonwebtoken": "^9.0.2",
+    "totp-generator": "^2.0.0"
+  },
+  "peerDependencies": {
+    "@prisma/client": ">=5.0.0",
+    "superjson": ">=1.0.0",
+    "zod": ">=3.20.0"
+  },
+  "peerDependenciesMeta": {
+    "@prisma/client": {
+      "optional": false
+    },
+    "superjson": {
+      "optional": false
+    },
+    "zod": {
+      "optional": false
+    }
+  },
+  "devDependencies": {
+    "@prisma/client": "^7.1.0",
+    "@trpc/server": "11.8.0",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^9.0.9",
+    "@types/node": "^20.19.0",
+    "@typescript-eslint/eslint-plugin": "^7.18.0",
+    "@typescript-eslint/parser": "^7.18.0",
+    "eslint": "^8.57.0",
+    "prisma": "^7.1.0",
+    "superjson": "^1.13.3",
+    "tsup": "^8.3.5",
+    "typescript": "5.9.3",
+    "zod": "3.24.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "packageManager": "pnpm@10.26.0+sha512.3b3f6c725ebe712506c0ab1ad4133cf86b1f4b687effce62a9b38b4d72e3954242e643190fc51fa1642949c735f403debd44f5cb0edd657abe63a8b6a7e1e402"
+}
