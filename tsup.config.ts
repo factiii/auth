@@ -2,9 +2,9 @@ import { defineConfig } from 'tsup';
 
 export default defineConfig({
   entry: ['src/index.ts', 'src/validators.ts'],
-  format: ['cjs', 'esm'],
+  format: ['esm', 'cjs'],
   dts: true,
-  sourcemap: true,
+  sourcemap: false,
   clean: true,
   external: ['@prisma/client'],
 });
