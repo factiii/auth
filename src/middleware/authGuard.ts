@@ -4,11 +4,7 @@ import { type AuthConfig } from '../types/config';
 import { type TrpcBuilder, type TrpcContext } from '../types/trpc';
 import { defaultCookieSettings, defaultStorageKeys } from '../utilities/config';
 import { clearAuthCookies, parseAuthCookies } from '../utilities/cookies';
-import {
-  isTokenExpiredError,
-  isTokenInvalidError,
-  verifyAccessToken
-} from '../utilities/jwt';
+import { isTokenExpiredError, isTokenInvalidError, verifyAccessToken } from '../utilities/jwt';
 
 export function createAuthGuard(config: AuthConfig, t: TrpcBuilder) {
   const storageKeys = config.storageKeys ?? defaultStorageKeys;
@@ -34,13 +30,13 @@ export function createAuthGuard(config: AuthConfig, t: TrpcBuilder) {
           ip: ctx.ip,
           userAgent: ctx.headers['user-agent'],
           ...(path ? { path } : {}),
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         };
 
         const combinedStack = [
           errorStack ? `Error Stack:\n${errorStack}` : null,
           'Context:',
-          JSON.stringify(contextInfo, null, 2)
+          JSON.stringify(contextInfo, null, 2),
         ]
           .filter(Boolean)
           .join('\n\n');
@@ -50,7 +46,7 @@ export function createAuthGuard(config: AuthConfig, t: TrpcBuilder) {
           description: `Session revoked: ${description}`,
           stack: combinedStack,
           ip: ctx.ip,
-          userId: ctx.userId ?? null
+          userId: ctx.userId ?? null,
         });
       } catch {
         // Silently fail - don't let error logging prevent session revocation
@@ -61,20 +57,16 @@ export function createAuthGuard(config: AuthConfig, t: TrpcBuilder) {
       try {
         await config.prisma.session.update({
           where: { id: sessionId },
-          data: { revokedAt: new Date() }
+          data: { revokedAt: new Date() },
         });
 
         if (config.hooks?.onSessionRevoked) {
           const session = await config.prisma.session.findUnique({
             where: { id: sessionId },
-            select: { id: true, userId: true, socketId: true }
+            select: { id: true, userId: true, socketId: true },
           });
           if (session) {
-            await config.hooks.onSessionRevoked(
-              session.userId,
-              session.socketId,
-              description
-            );
+            await config.hooks.onSessionRevoked(session.userId, session.socketId, description);
           }
         }
       } catch {
@@ -92,7 +84,7 @@ export function createAuthGuard(config: AuthConfig, t: TrpcBuilder) {
     if (!userAgent) {
       throw new TRPCError({
         code: 'BAD_REQUEST',
-        message: 'User agent is required'
+        message: 'User agent is required',
       });
     }
 
@@ -101,7 +93,7 @@ export function createAuthGuard(config: AuthConfig, t: TrpcBuilder) {
       try {
         const decodedToken = verifyAccessToken(authToken, {
           secret: config.secrets.jwt,
-          ignoreExpiration: meta?.ignoreExpiration ?? false
+          ignoreExpiration: meta?.ignoreExpiration ?? false,
         });
 
         // For refresh endpoint, require refresh token
@@ -115,7 +107,7 @@ export function createAuthGuard(config: AuthConfig, t: TrpcBuilder) {
           );
           throw new TRPCError({
             message: 'Unauthorized',
-            code: 'UNAUTHORIZED'
+            code: 'UNAUTHORIZED',
           });
         }
 
@@ -123,20 +115,20 @@ export function createAuthGuard(config: AuthConfig, t: TrpcBuilder) {
         const session = await config.prisma.session.findUnique({
           where: {
             id: decodedToken.id,
-            ...(path === 'auth.refresh' ? { refreshToken } : {})
+            ...(path === 'auth.refresh' ? { refreshToken } : {}),
           },
           select: {
             userId: true,
             user: {
               select: {
                 status: true,
-                verifiedHumanAt: true
-              }
+                verifiedHumanAt: true,
+              },
             },
             revokedAt: true,
             socketId: true,
-            id: true
-          }
+            id: true,
+          },
         });
 
         if (!session) {
@@ -149,22 +141,16 @@ export function createAuthGuard(config: AuthConfig, t: TrpcBuilder) {
           );
           throw new TRPCError({
             message: 'Unauthorized',
-            code: 'UNAUTHORIZED'
+            code: 'UNAUTHORIZED',
           });
         }
 
         // Check user status
         if (session.user.status === 'BANNED') {
-          await revokeSession(
-            ctx,
-            session.id,
-            'Session revoked: User banned',
-            undefined,
-            path
-          );
+          await revokeSession(ctx, session.id, 'Session revoked: User banned', undefined, path);
           throw new TRPCError({
             message: 'Unauthorized',
-            code: 'UNAUTHORIZED'
+            code: 'UNAUTHORIZED',
           });
         }
 
@@ -174,27 +160,22 @@ export function createAuthGuard(config: AuthConfig, t: TrpcBuilder) {
 
           if (
             timeoutMs !== null &&
-            !['auth.refresh', 'auth.verifyBiometric', 'auth.logout'].includes(
-              path
-            )
+            !['auth.refresh', 'auth.verifyBiometric', 'auth.logout'].includes(path)
           ) {
             if (!session.user.verifiedHumanAt) {
               throw new TRPCError({
-                message:
-                  'Biometric verification not completed. Please verify again.',
-                code: 'FORBIDDEN'
+                message: 'Biometric verification not completed. Please verify again.',
+                code: 'FORBIDDEN',
               });
             }
 
             const now = new Date();
-            const verificationExpiry = new Date(
-              session.user.verifiedHumanAt.getTime() + timeoutMs
-            );
+            const verificationExpiry = new Date(session.user.verifiedHumanAt.getTime() + timeoutMs);
 
             if (now > verificationExpiry) {
               throw new TRPCError({
                 message: 'Biometric verification expired. Please verify again.',
-                code: 'FORBIDDEN'
+                code: 'FORBIDDEN',
               });
             }
           }
@@ -211,7 +192,7 @@ export function createAuthGuard(config: AuthConfig, t: TrpcBuilder) {
           );
           throw new TRPCError({
             message: 'Unauthorized',
-            code: 'UNAUTHORIZED'
+            code: 'UNAUTHORIZED',
           });
         }
 
@@ -219,7 +200,7 @@ export function createAuthGuard(config: AuthConfig, t: TrpcBuilder) {
         if (meta?.adminRequired) {
           const admin = await config.prisma.admin.findFirst({
             where: { userId: session.userId },
-            select: { ip: true }
+            select: { ip: true },
           });
 
           if (!admin || admin.ip !== ctx.ip) {
@@ -232,7 +213,7 @@ export function createAuthGuard(config: AuthConfig, t: TrpcBuilder) {
             );
             throw new TRPCError({
               message: 'Unauthorized',
-              code: 'UNAUTHORIZED'
+              code: 'UNAUTHORIZED',
             });
           }
         }
@@ -244,8 +225,8 @@ export function createAuthGuard(config: AuthConfig, t: TrpcBuilder) {
             userId: session.userId,
             socketId: session.socketId,
             sessionId: session.id,
-            refreshToken
-          }
+            refreshToken,
+          },
         });
       } catch (err: unknown) {
         if (err instanceof TRPCError && err.code === 'FORBIDDEN') {
@@ -270,24 +251,16 @@ export function createAuthGuard(config: AuthConfig, t: TrpcBuilder) {
             path
           );
           throw new TRPCError({
-            message: isTokenInvalidError(err)
-              ? 'Token invalid'
-              : 'Token expired',
-            code: 'UNAUTHORIZED'
+            message: isTokenInvalidError(err) ? 'Token invalid' : 'Token expired',
+            code: 'UNAUTHORIZED',
           });
         }
 
         if (err instanceof TRPCError && err.code === 'UNAUTHORIZED') {
-          await revokeSession(
-            ctx,
-            null,
-            'Session revoked: Unauthorized',
-            errorStack,
-            path
-          );
+          await revokeSession(ctx, null, 'Session revoked: Unauthorized', errorStack, path);
           throw new TRPCError({
             message: 'Unauthorized',
-            code: 'UNAUTHORIZED'
+            code: 'UNAUTHORIZED',
           });
         }
 
@@ -299,13 +272,7 @@ export function createAuthGuard(config: AuthConfig, t: TrpcBuilder) {
         return next({ ctx: { ...ctx, userId: 0 } });
       }
 
-      await revokeSession(
-        ctx,
-        null,
-        'Session revoked: No token sent',
-        undefined,
-        path
-      );
+      await revokeSession(ctx, null, 'Session revoked: No token sent', undefined, path);
       throw new TRPCError({ message: 'Unauthorized', code: 'UNAUTHORIZED' });
     }
   });

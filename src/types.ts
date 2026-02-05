@@ -67,8 +67,6 @@ export interface JwtError extends Error {
 export function isJwtError(error: unknown): error is JwtError {
   return (
     error instanceof Error &&
-    ['TokenExpiredError', 'JsonWebTokenError', 'NotBeforeError'].includes(
-      error.name
-    )
+    ['TokenExpiredError', 'JsonWebTokenError', 'NotBeforeError'].includes(error.name)
   );
 }

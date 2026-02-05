@@ -11,7 +11,7 @@ export type { OAuthKeys } from './oauth';
 export const defaultTokenSettings: TokenSettings = {
   accessTokenExpiry: '5m',
   passwordResetExpiryMs: 60 * 60 * 1000, // 1 hour
-  otpValidityMs: 15 * 60 * 1000 // 15 minutes
+  otpValidityMs: 15 * 60 * 1000, // 15 minutes
 };
 
 /**
@@ -23,7 +23,7 @@ export const defaultCookieSettings: CookieSettings = {
   httpOnly: true,
   accessTokenPath: '/',
   refreshTokenPath: '/api/trpc/auth.refresh',
-  maxAge: 365 * 24 * 60 * 60 // 1 year in seconds
+  maxAge: 365 * 24 * 60 * 60, // 1 year in seconds
 };
 
 /**
@@ -31,7 +31,7 @@ export const defaultCookieSettings: CookieSettings = {
  */
 export const defaultStorageKeys = {
   accessToken: 'auth-at',
-  refreshToken: 'auth-rt'
+  refreshToken: 'auth-rt',
 };
 
 /**
@@ -44,7 +44,7 @@ export const defaultFeatures: AuthFeatures = {
   biometric: false,
   emailVerification: true,
   passwordReset: true,
-  otpLogin: true
+  otpLogin: true,
 };
 
 /**
@@ -52,8 +52,7 @@ export const defaultFeatures: AuthFeatures = {
  */
 export function createAuthConfig(
   config: AuthConfig
-): Required<Omit<AuthConfig, 'hooks' | 'oauthKeys' | 'schemaExtensions'>> &
-  AuthConfig {
+): Required<Omit<AuthConfig, 'hooks' | 'oauthKeys' | 'schemaExtensions'>> & AuthConfig {
   const emailService = config.emailService ?? createNoopEmailAdapter();
   return {
     ...config,
@@ -62,7 +61,7 @@ export function createAuthConfig(
     cookieSettings: { ...defaultCookieSettings, ...config.cookieSettings },
     storageKeys: { ...defaultStorageKeys, ...config.storageKeys },
     generateUsername: config.generateUsername ?? (() => `user_${Date.now()}`),
-    emailService
+    emailService,
   };
 }
 
@@ -75,5 +74,5 @@ export const defaultAuthConfig = {
   features: defaultFeatures,
   tokenSettings: defaultTokenSettings,
   cookieSettings: defaultCookieSettings,
-  storageKeys: defaultStorageKeys
+  storageKeys: defaultStorageKeys,
 };

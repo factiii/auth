@@ -43,7 +43,6 @@ export interface AuthFeatures {
   otpLogin?: boolean;
 }
 
-
 export interface AuthConfig<TExtensions extends SchemaExtensions = {}> {
   /**
    * Prisma client instance with required models

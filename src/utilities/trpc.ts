@@ -35,8 +35,7 @@ function isPrismaConnectionError(error: unknown): boolean {
   // Check error constructor name for Prisma connection errors
   const constructorName = error.constructor?.name || '';
   if (constructorName.includes('Prisma')) {
-    const errorMessage =
-      (error as { message?: string }).message?.toLowerCase() || '';
+    const errorMessage = (error as { message?: string }).message?.toLowerCase() || '';
     if (
       errorMessage.includes("can't reach database") ||
       errorMessage.includes('authentication failed') ||
@@ -72,8 +71,7 @@ export function createTrpcBuilder(config: ResolvedAuthConfig) {
         if (error.code === 'INTERNAL_SERVER_ERROR') {
           if (config.hooks?.logError) {
             const errorType =
-              isPrismaConnectionError(error) ||
-              isPrismaConnectionError(error.cause)
+              isPrismaConnectionError(error) || isPrismaConnectionError(error.cause)
                 ? 'DATABASE_ERROR'
                 : 'SERVER_ERROR';
 
@@ -83,7 +81,7 @@ export function createTrpcBuilder(config: ResolvedAuthConfig) {
                 description: error.message,
                 stack: error.stack || 'No stack trace',
                 ip: opts.ctx?.ip,
-                userId: opts.ctx?.userId ?? null
+                userId: opts.ctx?.userId ?? null,
               })
               .catch(() => {
                 // Silently fail - error logging should never throw
@@ -96,9 +94,8 @@ export function createTrpcBuilder(config: ResolvedAuthConfig) {
             message: 'An unexpected error occurred. Please try again later.',
             data: {
               ...safeData,
-              zodError:
-                error.cause instanceof ZodError ? error.cause.flatten() : null
-            }
+              zodError: error.cause instanceof ZodError ? error.cause.flatten() : null,
+            },
           };
         }
 
@@ -106,18 +103,14 @@ export function createTrpcBuilder(config: ResolvedAuthConfig) {
           ...shape,
           data: {
             ...safeData,
-            zodError:
-              error.cause instanceof ZodError ? error.cause.flatten() : null
-          }
+            zodError: error.cause instanceof ZodError ? error.cause.flatten() : null,
+          },
         };
-      }
+      },
     });
 }
 
-export function createBaseProcedure(
-  t: TrpcBuilder,
-  authGuard: ReturnType<typeof createAuthGuard>
-) {
+export function createBaseProcedure(t: TrpcBuilder, authGuard: ReturnType<typeof createAuthGuard>) {
   return t.procedure.use(authGuard);
 }
 

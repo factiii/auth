@@ -22,11 +22,7 @@ export interface EmailAdapter {
   /**
    * Send login notification to existing devices
    */
-  sendLoginNotification?(
-    email: string,
-    browserName: string,
-    ip?: string
-  ): Promise<void>;
+  sendLoginNotification?(email: string, browserName: string, ip?: string): Promise<void>;
 }
 
 /**
@@ -45,19 +41,13 @@ export function createNoopEmailAdapter(): EmailAdapter {
       );
     },
     async sendOTPEmail(email: string, otp: number) {
-      console.debug(
-        `[NoopEmailAdapter] Would send OTP email to ${email} with code ${otp}`
-      );
+      console.debug(`[NoopEmailAdapter] Would send OTP email to ${email} with code ${otp}`);
     },
-    async sendLoginNotification(
-      email: string,
-      browserName: string,
-      ip?: string
-    ) {
+    async sendLoginNotification(email: string, browserName: string, ip?: string) {
       console.debug(
         `[NoopEmailAdapter] Would send login notification to ${email} from ${browserName} (${ip})`
       );
-    }
+    },
   };
 }
 
@@ -84,16 +74,12 @@ export function createConsoleEmailAdapter(): EmailAdapter {
       console.log(`OTP: ${otp}`);
       console.log('========================\n');
     },
-    async sendLoginNotification(
-      email: string,
-      browserName: string,
-      ip?: string
-    ) {
+    async sendLoginNotification(email: string, browserName: string, ip?: string) {
       console.log('\n=== EMAIL: Login Notification ===');
       console.log(`To: ${email}`);
       console.log(`Browser: ${browserName}`);
       console.log(`IP: ${ip || 'Unknown'}`);
       console.log('=================================\n');
-    }
+    },
   };
 }

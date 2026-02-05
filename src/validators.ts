@@ -16,7 +16,7 @@ export const signupSchema = z.object({
     .min(1, { message: 'Username is required' })
     .max(30, { message: 'Username must be 30 characters or less' })
     .regex(usernameValidationRegex, {
-      message: 'Username can only contain letters, numbers, and underscores'
+      message: 'Username can only contain letters, numbers, and underscores',
     }),
   email: z
     .string()
@@ -27,8 +27,8 @@ export const signupSchema = z.object({
     .min(6, { message: 'Password must contain at least 6 characters' })
     .max(72, { message: 'Password must be 72 characters or less' })
     .refine((val) => val.trim().length >= 6, {
-      message: 'Password cannot be only whitespace'
-    })
+      message: 'Password cannot be only whitespace',
+    }),
 });
 
 /**
@@ -37,7 +37,7 @@ export const signupSchema = z.object({
 export const loginSchema = z.object({
   username: z.string().min(1, { message: 'Username or email is required' }),
   password: z.string().min(1, { message: 'Password is required' }),
-  code: z.string().optional() // 2FA code
+  code: z.string().optional(), // 2FA code
 });
 
 /**
@@ -47,17 +47,17 @@ export const oAuthLoginSchema = z.object({
   idToken: z.string(),
   user: z
     .object({
-      email: z.string().email().optional()
+      email: z.string().email().optional(),
     })
     .optional(),
-  provider: z.enum(['GOOGLE', 'APPLE'])
+  provider: z.enum(['GOOGLE', 'APPLE']),
 });
 
 /**
  * Schema for password reset request
  */
 export const requestPasswordResetSchema = z.object({
-  email: z.string().email({ message: 'Invalid email address' })
+  email: z.string().email({ message: 'Invalid email address' }),
 });
 
 /**
@@ -68,27 +68,25 @@ export const resetPasswordSchema = z.object({
   password: z
     .string()
     .min(6, { message: 'Password must contain at least 6 characters' })
-    .max(72, { message: 'Password must be 72 characters or less' })
+    .max(72, { message: 'Password must be 72 characters or less' }),
 });
 
 /**
  * Schema for checking password reset token
  */
 export const checkPasswordResetSchema = z.object({
-  token: z.string().min(1, { message: 'Reset token is required' })
+  token: z.string().min(1, { message: 'Reset token is required' }),
 });
 
 /**
  * Schema for changing password (authenticated)
  */
 export const changePasswordSchema = z.object({
-  currentPassword: z
-    .string()
-    .min(1, { message: 'Current password is required' }),
+  currentPassword: z.string().min(1, { message: 'Current password is required' }),
   newPassword: z
     .string()
     .min(6, { message: 'New password must contain at least 6 characters' })
-    .max(72, { message: 'Password must be 72 characters or less' })
+    .max(72, { message: 'Password must be 72 characters or less' }),
 });
 
 /**
@@ -96,14 +94,14 @@ export const changePasswordSchema = z.object({
  */
 export const twoFaVerifySchema = z.object({
   code: z.string().min(6, { message: 'Verification code is required' }),
-  sessionId: z.number().optional()
+  sessionId: z.number().optional(),
 });
 
 /**
  * Schema for 2FA setup
  */
 export const twoFaSetupSchema = z.object({
-  code: z.string().min(6, { message: 'Verification code is required' })
+  code: z.string().min(6, { message: 'Verification code is required' }),
 });
 
 /**
@@ -111,7 +109,7 @@ export const twoFaSetupSchema = z.object({
  */
 export const twoFaResetSchema = z.object({
   username: z.string().min(1),
-  password: z.string().min(1)
+  password: z.string().min(1),
 });
 
 /**
@@ -119,21 +117,21 @@ export const twoFaResetSchema = z.object({
  */
 export const twoFaResetVerifySchema = z.object({
   code: z.number().min(100000).max(999999),
-  username: z.string().min(1)
+  username: z.string().min(1),
 });
 
 /**
  * Schema for email verification
  */
 export const verifyEmailSchema = z.object({
-  code: z.string().min(1, { message: 'Verification code is required' })
+  code: z.string().min(1, { message: 'Verification code is required' }),
 });
 
 /**
  * Schema for resending verification email
  */
 export const resendVerificationSchema = z.object({
-  email: z.string().email().optional()
+  email: z.string().email().optional(),
 });
 
 /**
@@ -145,49 +143,49 @@ export const biometricVerifySchema = z.object({});
  * Schema for push token registration
  */
 export const registerPushTokenSchema = z.object({
-  pushToken: z.string().min(1, { message: 'Push token is required' })
+  pushToken: z.string().min(1, { message: 'Push token is required' }),
 });
 
 /**
  * Schema for push token deregistration
  */
 export const deregisterPushTokenSchema = z.object({
-  pushToken: z.string().min(1, { message: 'Push token is required' })
+  pushToken: z.string().min(1, { message: 'Push token is required' }),
 });
 
 /**
  * Schema for getting 2FA secret
  */
 export const getTwofaSecretSchema = z.object({
-  pushCode: z.string().min(6, { message: 'Push code is required' })
+  pushCode: z.string().min(6, { message: 'Push code is required' }),
 });
 
 /**
  * Schema for disabling 2FA
  */
 export const disableTwofaSchema = z.object({
-  password: z.string().min(1, { message: 'Password is required' })
+  password: z.string().min(1, { message: 'Password is required' }),
 });
 
 /**
  * Schema for logout
  */
 export const logoutSchema = z.object({
-  allDevices: z.boolean().optional().default(false)
+  allDevices: z.boolean().optional().default(false),
 });
 
 /**
  * Schema for ending all sessions
  */
 export const endAllSessionsSchema = z.object({
-  skipCurrentSession: z.boolean().optional().default(true)
+  skipCurrentSession: z.boolean().optional().default(true),
 });
 
 /**
  * Schema for OTP-based login request
  */
 export const otpLoginRequestSchema = z.object({
-  email: z.string().email({ message: 'Invalid email address' })
+  email: z.string().email({ message: 'Invalid email address' }),
 });
 
 /**
@@ -195,7 +193,7 @@ export const otpLoginRequestSchema = z.object({
  */
 export const otpLoginVerifySchema = z.object({
   email: z.string().email(),
-  code: z.number().min(100000).max(999999)
+  code: z.number().min(100000).max(999999),
 });
 
 export type SignupInput = z.infer<typeof signupSchema>;
@@ -214,16 +212,16 @@ export interface AuthSchemas {
   oauth: AnyZodObject;
 }
 
-
 /**
  * Compute merged ZodObject type.
  * When TExt is defined, produces a schema with both base and extension shapes.
  * When TExt is undefined, produces the base schema.
  */
-type MergedSchema<TBase extends AnyZodObject, TExt extends AnyZodObject | undefined> =
-  [TExt] extends [AnyZodObject]
-    ? z.ZodObject<TBase['shape'] & TExt['shape'], 'strip', z.ZodTypeAny>
-    : TBase;
+type MergedSchema<TBase extends AnyZodObject, TExt extends AnyZodObject | undefined> = [
+  TExt,
+] extends [AnyZodObject]
+  ? z.ZodObject<TBase['shape'] & TExt['shape'], 'strip', z.ZodTypeAny>
+  : TBase;
 
 /** Result type from createSchemas - preserves concrete schema types */
 export type CreatedSchemas<TExtensions extends SchemaExtensions = {}> = {
@@ -232,28 +230,22 @@ export type CreatedSchemas<TExtensions extends SchemaExtensions = {}> = {
   oauth: MergedSchema<typeof oAuthLoginSchema, TExtensions['oauth']>;
 };
 
-export type SignupSchemaInput<TExtensions extends SchemaExtensions = {}> =
-  SignupInput & (TExtensions['signup'] extends AnyZodObject ? z.infer<TExtensions['signup']> : {});
+export type SignupSchemaInput<TExtensions extends SchemaExtensions = {}> = SignupInput &
+  (TExtensions['signup'] extends AnyZodObject ? z.infer<TExtensions['signup']> : {});
 
-export type LoginSchemaInput<TExtensions extends SchemaExtensions = {}> =
-  LoginInput & (TExtensions['login'] extends AnyZodObject ? z.infer<TExtensions['login']> : {});
+export type LoginSchemaInput<TExtensions extends SchemaExtensions = {}> = LoginInput &
+  (TExtensions['login'] extends AnyZodObject ? z.infer<TExtensions['login']> : {});
 
-export type OAuthSchemaInput<TExtensions extends SchemaExtensions = {}> =
-  OAuthLoginInput & (TExtensions['oauth'] extends AnyZodObject ? z.infer<TExtensions['oauth']> : {});
+export type OAuthSchemaInput<TExtensions extends SchemaExtensions = {}> = OAuthLoginInput &
+  (TExtensions['oauth'] extends AnyZodObject ? z.infer<TExtensions['oauth']> : {});
 
 /** Create schemas with optional extensions merged in */
 export function createSchemas<TExtensions extends SchemaExtensions = {}>(
   extensions?: TExtensions
 ): CreatedSchemas<TExtensions> {
   return {
-    signup: extensions?.signup
-      ? signupSchema.merge(extensions.signup)
-      : signupSchema,
-    login: extensions?.login
-      ? loginSchema.merge(extensions.login)
-      : loginSchema,
-    oauth: extensions?.oauth
-      ? oAuthLoginSchema.merge(extensions.oauth)
-      : oAuthLoginSchema
+    signup: extensions?.signup ? signupSchema.merge(extensions.signup) : signupSchema,
+    login: extensions?.login ? loginSchema.merge(extensions.login) : loginSchema,
+    oauth: extensions?.oauth ? oAuthLoginSchema.merge(extensions.oauth) : oAuthLoginSchema,
   } as CreatedSchemas<TExtensions>;
 }

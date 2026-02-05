@@ -29,7 +29,7 @@ export function createAccessToken(
   options: CreateTokenOptions
 ): string {
   return jwt.sign(payload, options.secret, {
-    expiresIn: options.expiresIn
+    expiresIn: options.expiresIn,
   });
 }
 
@@ -40,12 +40,9 @@ export function createAccessToken(
  * @returns Decoded token payload
  * @throws Error if token is invalid or expired
  */
-export function verifyAccessToken(
-  token: string,
-  options: VerifyTokenOptions
-): JwtPayload {
+export function verifyAccessToken(token: string, options: VerifyTokenOptions): JwtPayload {
   return jwt.verify(token, options.secret, {
-    ignoreExpiration: options.ignoreExpiration ?? false
+    ignoreExpiration: options.ignoreExpiration ?? false,
   }) as JwtPayload;
 }
 
@@ -75,9 +72,7 @@ interface JwtError extends Error {
 function isJwtError(error: unknown): error is JwtError {
   return (
     error instanceof Error &&
-    ['TokenExpiredError', 'JsonWebTokenError', 'NotBeforeError'].includes(
-      error.name
-    )
+    ['TokenExpiredError', 'JsonWebTokenError', 'NotBeforeError'].includes(error.name)
   );
 }
 

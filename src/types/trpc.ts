@@ -1,9 +1,6 @@
 import { type CreateHTTPContextOptions } from '@trpc/server/adapters/standalone';
 
-import {
-  type createBaseProcedure,
-  type createTrpcBuilder
-} from '../utilities/trpc';
+import { type createBaseProcedure, type createTrpcBuilder } from '../utilities/trpc';
 
 export type TrpcBuilder = ReturnType<typeof createTrpcBuilder>;
 export type AuthProcedure = ReturnType<typeof createBaseProcedure>;
