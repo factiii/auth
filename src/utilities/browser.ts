@@ -19,34 +19,25 @@ export function detectBrowser(userAgent: string): string {
     return 'iOS Browser (Chrome)';
   if (/iphone|ipad|ipod/i.test(userAgent) && /fxios/i.test(userAgent))
     return 'iOS Browser (Firefox)';
-  if (/iphone|ipad|ipod/i.test(userAgent) && /edg\//i.test(userAgent))
-    return 'iOS Browser (Edge)';
+  if (/iphone|ipad|ipod/i.test(userAgent) && /edg\//i.test(userAgent)) return 'iOS Browser (Edge)';
 
   // Check if it's an Android app
-  if (
-    /android/i.test(userAgent) &&
-    !/chrome|firefox|samsungbrowser|opr\/|edg\//i.test(userAgent)
-  ) {
+  if (/android/i.test(userAgent) && !/chrome|firefox|samsungbrowser|opr\/|edg\//i.test(userAgent)) {
     return 'Android App';
   }
 
   // Check for Android browsers
-  if (/android/i.test(userAgent) && /chrome/i.test(userAgent))
-    return 'Android Browser (Chrome)';
-  if (/android/i.test(userAgent) && /firefox/i.test(userAgent))
-    return 'Android Browser (Firefox)';
+  if (/android/i.test(userAgent) && /chrome/i.test(userAgent)) return 'Android Browser (Chrome)';
+  if (/android/i.test(userAgent) && /firefox/i.test(userAgent)) return 'Android Browser (Firefox)';
   if (/android/i.test(userAgent) && /samsungbrowser/i.test(userAgent))
     return 'Android Browser (Samsung)';
-  if (/android/i.test(userAgent) && /opr\//i.test(userAgent))
-    return 'Android Browser (Opera)';
-  if (/android/i.test(userAgent) && /edg\//i.test(userAgent))
-    return 'Android Browser (Edge)';
+  if (/android/i.test(userAgent) && /opr\//i.test(userAgent)) return 'Android Browser (Opera)';
+  if (/android/i.test(userAgent) && /edg\//i.test(userAgent)) return 'Android Browser (Edge)';
 
   // Check for common desktop browsers
   if (/chrome|chromium/i.test(userAgent)) return 'Chrome';
   if (/firefox/i.test(userAgent)) return 'Firefox';
-  if (/safari/i.test(userAgent) && !/chrome|chromium|crios/i.test(userAgent))
-    return 'Safari';
+  if (/safari/i.test(userAgent) && !/chrome|chromium|crios/i.test(userAgent)) return 'Safari';
   if (/opr\//i.test(userAgent)) return 'Opera';
   if (/edg\//i.test(userAgent)) return 'Edge';
 

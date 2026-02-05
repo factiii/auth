@@ -1,6 +1,6 @@
 {
   "name": "@factiii/auth",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "publishConfig": {
     "access": "public"
   },
@@ -53,10 +53,16 @@
     "build": "tsup",
     "dev": "tsup --watch",
     "check-types": "tsc --noEmit",
-    "lint": "eslint src --ext .ts,.tsx",
-    "lint:fix": "eslint src --ext .ts,.tsx --fix",
+    "lint": "eslint src",
+    "lint:fix": "eslint src --fix",
+    "format": "prettier --check src",
+    "format:fix": "prettier --write src",
     "clean": "rm -rf dist node_modules/.cache .turbo",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "e2e": "pnpm e2e:db:up && playwright test --reporter=list; pnpm e2e:db:down",
+    "e2e:ui": "pnpm e2e:db:up && playwright test --ui",
+    "e2e:db:up": "docker compose -f e2e/docker-compose.yml up -d --wait && prisma generate --schema=e2e/server/schema.prisma --config=e2e/server/prisma.config.ts && prisma migrate reset --schema=e2e/server/schema.prisma --config=e2e/server/prisma.config.ts --force",
+    "e2e:db:down": "docker compose -f e2e/docker-compose.yml down"
   },
   "dependencies": {
     "@trpc/server": "11.8.0",
@@ -83,22 +89,39 @@
     }
   },
   "devDependencies": {
+    "@playwright/test": "^1.58.1",
+    "@prisma/adapter-better-sqlite3": "^7.3.0",
+    "@prisma/adapter-pg": "^7.3.0",
     "@prisma/client": "^7.1.0",
+    "@trpc/client": "^11.8.0",
     "@trpc/server": "11.8.0",
     "@types/bcryptjs": "^2.4.6",
+    "@types/better-sqlite3": "^7.6.13",
     "@types/jsonwebtoken": "^9.0.9",
     "@types/node": "^20.19.0",
+    "@types/pg": "^8.16.0",
+    "@types/react": "^19.2.11",
+    "@types/react-dom": "^19.2.3",
     "@typescript-eslint/eslint-plugin": "^7.18.0",
     "@typescript-eslint/parser": "^7.18.0",
+    "@vitejs/plugin-react": "^5.1.3",
+    "better-sqlite3": "^12.6.2",
     "eslint": "^8.57.0",
+    "pg": "^8.18.0",
+    "prettier": "^3.8.1",
     "prisma": "^7.1.0",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "react-router-dom": "^7.2.0",
     "superjson": "^1.13.3",
     "tsup": "^8.3.5",
+    "tsx": "^4.21.0",
     "typescript": "5.9.3",
+    "vite": "^7.3.1",
     "zod": "3.24.2"
   },
   "engines": {
     "node": ">=18.0.0"
   },
-  "packageManager": "pnpm@10.26.0+sha512.3b3f6c725ebe712506c0ab1ad4133cf86b1f4b687effce62a9b38b4d72e3954242e643190fc51fa1642949c735f403debd44f5cb0edd657abe63a8b6a7e1e402"
+  "packageManager": "pnpm@10.26.0"
 }

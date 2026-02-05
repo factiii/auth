@@ -7,31 +7,20 @@ import { EmailVerificationProcedureFactory } from './procedures/emailVerificatio
 import { OAuthLoginProcedureFactory } from './procedures/oauth';
 import { TwoFaProcedureFactory } from './procedures/twoFa';
 import type { SchemaExtensions } from './types/hooks';
-import {
-  type AuthProcedure,
-  type BaseProcedure,
-  type TrpcContext
-} from './types/trpc';
+import { type AuthProcedure, type BaseProcedure, type TrpcContext } from './types/trpc';
 import type { AuthConfig, ResolvedAuthConfig } from './utilities/config';
 import { createAuthConfig } from './utilities/config';
-import {
-  createBaseProcedure,
-  createTrpcBuilder,
-  getClientIp
-} from './utilities/trpc';
+import { createBaseProcedure, createTrpcBuilder, getClientIp } from './utilities/trpc';
 import { createSchemas, type CreatedSchemas } from './validators';
 
-export const createContext = ({
-  req,
-  res
-}: CreateHTTPContextOptions): TrpcContext => ({
+export const createContext = ({ req, res }: CreateHTTPContextOptions): TrpcContext => ({
   headers: req.headers,
   userId: null,
   sessionId: null,
   refreshToken: null,
   socketId: null,
   ip: getClientIp(req),
-  res
+  res,
 });
 
 class AuthRouterFactory<TExtensions extends SchemaExtensions = {}> {
@@ -43,9 +32,7 @@ class AuthRouterFactory<TExtensions extends SchemaExtensions = {}> {
   authProcedure: AuthProcedure;
   constructor(private userConfig: AuthConfig<TExtensions>) {
     this.config = createAuthConfig(this.userConfig);
-    this.schemas = createSchemas<TExtensions>(
-      this.config.schemaExtensions as TExtensions
-    );
+    this.schemas = createSchemas<TExtensions>(this.config.schemaExtensions as TExtensions);
     this.t = createTrpcBuilder(this.config);
     this.authGuard = createAuthGuard(this.config, this.t);
     this.procedure = createBaseProcedure(this.t, this.authGuard);
@@ -58,10 +45,7 @@ class AuthRouterFactory<TExtensions extends SchemaExtensions = {}> {
       this.procedure,
       this.authProcedure
     );
-    const biometricRoutes = new BiometricProcedureFactory(
-      this.config,
-      this.authProcedure
-    );
+    const biometricRoutes = new BiometricProcedureFactory(this.config, this.authProcedure);
     const emailVerificationRoutes = new EmailVerificationProcedureFactory(
       this.config,
       this.authProcedure
@@ -70,18 +54,14 @@ class AuthRouterFactory<TExtensions extends SchemaExtensions = {}> {
       this.config,
       this.procedure
     );
-    const twoFaRoutes = new TwoFaProcedureFactory(
-      this.config,
-      this.procedure,
-      this.authProcedure
-    );
+    const twoFaRoutes = new TwoFaProcedureFactory(this.config, this.procedure, this.authProcedure);
 
     return this.t.router({
       ...baseRoutes.createBaseProcedures(this.schemas),
       ...oAuthLoginRoutes.createOAuthLoginProcedures(this.schemas),
       ...twoFaRoutes.createTwoFaProcedures(),
       ...biometricRoutes.createBiometricProcedures(),
-      ...emailVerificationRoutes.createEmailVerificationProcedures()
+      ...emailVerificationRoutes.createEmailVerificationProcedures(),
     });
   }
 }
@@ -91,14 +71,14 @@ export function createAuthRouter<TExtensions extends SchemaExtensions = {}>(
 ) {
   const factory = new AuthRouterFactory<TExtensions>(config);
   const router = factory.t.router({
-    auth: factory.createRouter()
+    auth: factory.createRouter(),
   });
   return {
     router: router,
     t: factory.t,
     procedure: factory.procedure,
     authProcedure: factory.authProcedure,
-    createContext: createContext
+    createContext: createContext,
   };
 }
 

@@ -25,10 +25,7 @@ export async function hashPassword(
  * @param hashedPassword - Hashed password to compare against
  * @returns True if passwords match
  */
-export async function comparePassword(
-  password: string,
-  hashedPassword: string
-): Promise<boolean> {
+export async function comparePassword(password: string, hashedPassword: string): Promise<boolean> {
   return bcrypt.compare(password, hashedPassword);
 }
 
@@ -45,7 +42,7 @@ export function validatePasswordStrength(
   if (password.length < minLength) {
     return {
       valid: false,
-      error: `Password must be at least ${minLength} characters`
+      error: `Password must be at least ${minLength} characters`,
     };
   }
   return { valid: true };

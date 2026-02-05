@@ -14,7 +14,7 @@ export class BiometricProcedureFactory {
   createBiometricProcedures() {
     return {
       verifyBiometric: this.verifyBiometric(),
-      getBiometricStatus: this.getBiometricStatus()
+      getBiometricStatus: this.getBiometricStatus(),
     };
   }
 
@@ -25,23 +25,21 @@ export class BiometricProcedureFactory {
   }
 
   private verifyBiometric() {
-    return this.authProcedure
-      .input(biometricVerifySchema)
-      .mutation(async ({ ctx }) => {
-        this.checkConfig();
-        const { userId } = ctx;
+    return this.authProcedure.input(biometricVerifySchema).mutation(async ({ ctx }) => {
+      this.checkConfig();
+      const { userId } = ctx;
 
-        await this.config.prisma.user.update({
-          where: { id: userId },
-          data: { verifiedHumanAt: new Date(), tag: 'HUMAN' }
-        });
-
-        if (this.config.hooks?.onBiometricVerified) {
-          await this.config.hooks.onBiometricVerified(userId);
-        }
-
-        return { success: true, verifiedAt: new Date() };
+      await this.config.prisma.user.update({
+        where: { id: userId },
+        data: { verifiedHumanAt: new Date(), tag: 'HUMAN' },
       });
+
+      if (this.config.hooks?.onBiometricVerified) {
+        await this.config.hooks.onBiometricVerified(userId);
+      }
+
+      return { success: true, verifiedAt: new Date() };
+    });
   }
 
   private getBiometricStatus() {
@@ -51,7 +49,7 @@ export class BiometricProcedureFactory {
 
       const user = await this.config.prisma.user.findUnique({
         where: { id: userId },
-        select: { verifiedHumanAt: true }
+        select: { verifiedHumanAt: true },
       });
 
       if (!user) {
@@ -73,7 +71,7 @@ export class BiometricProcedureFactory {
         verifiedHumanAt: user.verifiedHumanAt,
         isVerified: !!user.verifiedHumanAt && !isExpired,
         isExpired,
-        requiresVerification: timeoutMs !== null
+        requiresVerification: timeoutMs !== null,
       };
     });
   }

@@ -7,7 +7,7 @@ import { type AuthCredentials, type CookieSettings } from '../types';
  */
 export const DEFAULT_STORAGE_KEYS = {
   ACCESS_TOKEN: 'auth-at',
-  REFRESH_TOKEN: 'auth-rt'
+  REFRESH_TOKEN: 'auth-rt',
 };
 
 /**
@@ -20,22 +20,18 @@ export function parseAuthCookies(
   cookieHeader: string | undefined,
   storageKeys: { accessToken: string; refreshToken: string } = {
     accessToken: DEFAULT_STORAGE_KEYS.ACCESS_TOKEN,
-    refreshToken: DEFAULT_STORAGE_KEYS.REFRESH_TOKEN
+    refreshToken: DEFAULT_STORAGE_KEYS.REFRESH_TOKEN,
   }
 ): { accessToken?: string; refreshToken?: string } {
   if (!cookieHeader) {
     return {};
   }
-  const accessToken = cookieHeader
-    .split(`${storageKeys.accessToken}=`)[1]
-    ?.split(';')[0];
-  const refreshToken = cookieHeader
-    .split(`${storageKeys.refreshToken}=`)[1]
-    ?.split(';')[0];
+  const accessToken = cookieHeader.split(`${storageKeys.accessToken}=`)[1]?.split(';')[0];
+  const refreshToken = cookieHeader.split(`${storageKeys.refreshToken}=`)[1]?.split(';')[0];
 
   return {
     accessToken: accessToken || undefined,
-    refreshToken: refreshToken || undefined
+    refreshToken: refreshToken || undefined,
   };
 }
 
@@ -45,9 +41,7 @@ export function parseAuthCookies(
  * @param req - HTTP request object
  * @returns Domain hostname or undefined
  */
-function extractDomain(
-  req: CreateHTTPContextOptions['res']['req']
-): string | undefined {
+function extractDomain(req: CreateHTTPContextOptions['res']['req']): string | undefined {
   // Try origin header first (available for POST/PUT/DELETE requests)
   const origin = req.headers.origin;
   if (origin) {
@@ -91,7 +85,7 @@ export function setAuthCookies(
   settings: Partial<CookieSettings>,
   storageKeys: { accessToken: string; refreshToken: string } = {
     accessToken: DEFAULT_STORAGE_KEYS.ACCESS_TOKEN,
-    refreshToken: DEFAULT_STORAGE_KEYS.REFRESH_TOKEN
+    refreshToken: DEFAULT_STORAGE_KEYS.REFRESH_TOKEN,
   }
 ): void {
   const cookies: string[] = [];
@@ -109,7 +103,7 @@ export function setAuthCookies(
       `SameSite=${settings.sameSite}`,
       `Path=${settings.refreshTokenPath}`,
       domain ? `Domain=${domain}` : '',
-      `Expires=${expiresDate}`
+      `Expires=${expiresDate}`,
     ]
       .filter(Boolean)
       .join('; ');
@@ -124,7 +118,7 @@ export function setAuthCookies(
       `SameSite=${settings.sameSite}`,
       `Path=${settings.accessTokenPath}`,
       domain ? `Domain=${domain}` : '',
-      `Expires=${expiresDate}`
+      `Expires=${expiresDate}`,
     ]
       .filter(Boolean)
       .join('; ');
@@ -148,7 +142,7 @@ export function clearAuthCookies(
   settings: Partial<CookieSettings>,
   storageKeys: { accessToken: string; refreshToken: string } = {
     accessToken: DEFAULT_STORAGE_KEYS.ACCESS_TOKEN,
-    refreshToken: DEFAULT_STORAGE_KEYS.REFRESH_TOKEN
+    refreshToken: DEFAULT_STORAGE_KEYS.REFRESH_TOKEN,
   }
 ): void {
   const domain = extractDomain(res.req);
@@ -162,7 +156,7 @@ export function clearAuthCookies(
       `SameSite=${settings.sameSite}`,
       `Path=${settings.refreshTokenPath}`,
       domain ? `Domain=${domain}` : '',
-      `Expires=${expiredDate}`
+      `Expires=${expiredDate}`,
     ]
       .filter(Boolean)
       .join('; '),
@@ -172,10 +166,10 @@ export function clearAuthCookies(
       `SameSite=${settings.sameSite}`,
       `Path=${settings.accessTokenPath}`,
       domain ? `Domain=${domain}` : '',
-      `Expires=${expiredDate}`
+      `Expires=${expiredDate}`,
     ]
       .filter(Boolean)
-      .join('; ')
+      .join('; '),
   ];
 
   res.setHeader('Set-Cookie', cookies);

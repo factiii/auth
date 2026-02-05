@@ -1,10 +1,6 @@
 import { type z, type AnyZodObject } from 'zod';
 
-import {
-  type loginSchema,
-  type oAuthLoginSchema,
-  type signupSchema
-} from '../validators';
+import { type loginSchema, type oAuthLoginSchema, type signupSchema } from '../validators';
 
 /**
  * Schema extensions for adding custom fields to auth inputs
@@ -20,12 +16,18 @@ type BaseLoginInput = z.infer<typeof loginSchema>;
 type BaseOAuthInput = z.infer<typeof oAuthLoginSchema>;
 
 /** Input types that include base fields plus any extension fields */
-type ExtendedSignupInput<TExtensions extends SchemaExtensions> =
-  BaseSignupInput & (TExtensions['signup'] extends AnyZodObject ? z.infer<TExtensions['signup']> : Record<string, unknown>);
-type ExtendedLoginInput<TExtensions extends SchemaExtensions> =
-  BaseLoginInput & (TExtensions['login'] extends AnyZodObject ? z.infer<TExtensions['login']> : Record<string, unknown>);
-type ExtendedOAuthInput<TExtensions extends SchemaExtensions> =
-  BaseOAuthInput & (TExtensions['oauth'] extends AnyZodObject ? z.infer<TExtensions['oauth']> : Record<string, unknown>);
+type ExtendedSignupInput<TExtensions extends SchemaExtensions> = BaseSignupInput &
+  (TExtensions['signup'] extends AnyZodObject
+    ? z.infer<TExtensions['signup']>
+    : Record<string, unknown>);
+type ExtendedLoginInput<TExtensions extends SchemaExtensions> = BaseLoginInput &
+  (TExtensions['login'] extends AnyZodObject
+    ? z.infer<TExtensions['login']>
+    : Record<string, unknown>);
+type ExtendedOAuthInput<TExtensions extends SchemaExtensions> = BaseOAuthInput &
+  (TExtensions['oauth'] extends AnyZodObject
+    ? z.infer<TExtensions['oauth']>
+    : Record<string, unknown>);
 
 /**
  * Lifecycle hooks for extending auth behavior with business logic
@@ -36,17 +38,13 @@ export interface AuthHooks<TExtensions extends SchemaExtensions = {}> {
    * Called before user registration validation
    * Use this to add custom validation or check business rules
    */
-  beforeRegister?: (
-    input: ExtendedSignupInput<TExtensions>
-  ) => Promise<void>;
+  beforeRegister?: (input: ExtendedSignupInput<TExtensions>) => Promise<void>;
 
   /**
    * Called before user login validation
    * Use this to add custom validation or check business rules
    */
-  beforeLogin?: (
-    input: ExtendedLoginInput<TExtensions>
-  ) => Promise<void>;
+  beforeLogin?: (input: ExtendedLoginInput<TExtensions>) => Promise<void>;
 
   /**
    * Called after a new user is created
@@ -88,20 +86,12 @@ export interface AuthHooks<TExtensions extends SchemaExtensions = {}> {
   /**
    * Called when a session is revoked
    */
-  onSessionRevoked?: (
-    sessionId: number,
-    socketId: string | null,
-    reason: string
-  ) => Promise<void>;
+  onSessionRevoked?: (sessionId: number, socketId: string | null, reason: string) => Promise<void>;
 
   /**
    * Called after user logs out
    */
-  afterLogout?: (
-    userId: number,
-    sessionId: number,
-    socketId: string | null
-  ) => Promise<void>;
+  afterLogout?: (userId: number, sessionId: number, socketId: string | null) => Promise<void>;
 
   /**
    * Called on token refresh
@@ -126,10 +116,7 @@ export interface AuthHooks<TExtensions extends SchemaExtensions = {}> {
   /**
    * Called after OAuth account is linked
    */
-  onOAuthLinked?: (
-    userId: number,
-    provider: 'GOOGLE' | 'APPLE'
-  ) => Promise<void>;
+  onOAuthLinked?: (userId: number, provider: 'GOOGLE' | 'APPLE') => Promise<void>;
 
   /**
    * Custom validation for biometric verification

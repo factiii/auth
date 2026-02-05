@@ -46,7 +46,7 @@ export function createOAuthVerifier(keys: OAuthKeys) {
   if (keys.google?.clientId) {
     googleClient = new OAuth2Client({
       clientId: keys.google.clientId,
-      clientSecret: keys.google.clientSecret
+      clientSecret: keys.google.clientSecret,
     });
   }
 
@@ -57,17 +57,11 @@ export function createOAuthVerifier(keys: OAuthKeys) {
   ): Promise<OAuthResult> {
     if (provider === 'GOOGLE') {
       if (!keys.google?.clientId) {
-        throw new OAuthVerificationError(
-          'Google OAuth configuration missing',
-          500
-        );
+        throw new OAuthVerificationError('Google OAuth configuration missing', 500);
       }
 
       if (!googleClient) {
-        throw new OAuthVerificationError(
-          'Google OAuth client not initialized',
-          500
-        );
+        throw new OAuthVerificationError('Google OAuth client not initialized', 500);
       }
 
       const audience = [keys.google.clientId];
@@ -77,7 +71,7 @@ export function createOAuthVerifier(keys: OAuthKeys) {
 
       const ticket = await googleClient.verifyIdToken({
         idToken: token,
-        audience
+        audience,
       });
 
       const payload = ticket.getPayload();
@@ -87,16 +81,13 @@ export function createOAuthVerifier(keys: OAuthKeys) {
 
       return {
         oauthId: payload.sub,
-        email: payload.email
+        email: payload.email,
       };
     }
 
     if (provider === 'APPLE') {
       if (!keys.apple?.clientId) {
-        throw new OAuthVerificationError(
-          'Apple OAuth configuration missing',
-          500
-        );
+        throw new OAuthVerificationError('Apple OAuth configuration missing', 500);
       }
 
       const audience = [keys.apple.clientId];
@@ -106,7 +97,7 @@ export function createOAuthVerifier(keys: OAuthKeys) {
 
       const { sub, email } = await appleSignin.verifyIdToken(token, {
         audience,
-        ignoreExpiration: false
+        ignoreExpiration: false,
       });
 
       const finalEmail = email || extra?.email;
@@ -116,7 +107,7 @@ export function createOAuthVerifier(keys: OAuthKeys) {
 
       return {
         oauthId: sub,
-        email: finalEmail
+        email: finalEmail,
       };
     }
 

@@ -26,6 +26,8 @@ export interface TokenSettings {
 export interface AuthFeatures {
   /** Enable two-factor authentication */
   twoFa?: boolean;
+  /** Require mobile device to enable 2FA (default: true). Set to false for testing. */
+  twoFaRequiresDevice?: boolean;
   /** OAuth providers configuration */
   oauth?: {
     google?: boolean;
@@ -40,7 +42,6 @@ export interface AuthFeatures {
   /** Enable OTP-based login */
   otpLogin?: boolean;
 }
-
 
 export interface AuthConfig<TExtensions extends SchemaExtensions = {}> {
   /**
