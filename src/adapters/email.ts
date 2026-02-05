@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 /**
  * Email service adapter interface
  * Implement this interface to integrate your email service
@@ -34,17 +35,17 @@ export interface EmailAdapter {
 export function createNoopEmailAdapter(): EmailAdapter {
   return {
     async sendVerificationEmail(email: string, code: string) {
-      console.log(
+      console.debug(
         `[NoopEmailAdapter] Would send verification email to ${email} with code ${code}`
       );
     },
     async sendPasswordResetEmail(email: string, token: string) {
-      console.log(
+      console.debug(
         `[NoopEmailAdapter] Would send password reset email to ${email} with token ${token}`
       );
     },
     async sendOTPEmail(email: string, otp: number) {
-      console.log(
+      console.debug(
         `[NoopEmailAdapter] Would send OTP email to ${email} with code ${otp}`
       );
     },
@@ -53,7 +54,7 @@ export function createNoopEmailAdapter(): EmailAdapter {
       browserName: string,
       ip?: string
     ) {
-      console.log(
+      console.debug(
         `[NoopEmailAdapter] Would send login notification to ${email} from ${browserName} (${ip})`
       );
     }

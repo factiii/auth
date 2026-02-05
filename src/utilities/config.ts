@@ -39,6 +39,7 @@ export const defaultStorageKeys = {
  */
 export const defaultFeatures: AuthFeatures = {
   twoFa: true,
+  twoFaRequiresDevice: true,
   oauth: { google: true, apple: true },
   biometric: false,
   emailVerification: true,

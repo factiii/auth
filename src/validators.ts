@@ -18,10 +18,17 @@ export const signupSchema = z.object({
     .regex(usernameValidationRegex, {
       message: 'Username can only contain letters, numbers, and underscores'
     }),
-  email: z.string().email({ message: 'Invalid email address' }),
+  email: z
+    .string()
+    .max(254, { message: 'Email must be 254 characters or less' })
+    .email({ message: 'Invalid email address' }),
   password: z
     .string()
     .min(6, { message: 'Password must contain at least 6 characters' })
+    .max(72, { message: 'Password must be 72 characters or less' })
+    .refine((val) => val.trim().length >= 6, {
+      message: 'Password cannot be only whitespace'
+    })
 });
 
 /**
@@ -61,6 +68,7 @@ export const resetPasswordSchema = z.object({
   password: z
     .string()
     .min(6, { message: 'Password must contain at least 6 characters' })
+    .max(72, { message: 'Password must be 72 characters or less' })
 });
 
 /**
@@ -80,6 +88,7 @@ export const changePasswordSchema = z.object({
   newPassword: z
     .string()
     .min(6, { message: 'New password must contain at least 6 characters' })
+    .max(72, { message: 'Password must be 72 characters or less' })
 });
 
 /**

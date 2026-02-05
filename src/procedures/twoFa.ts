@@ -69,16 +69,18 @@ export class TwoFaProcedureFactory {
         throw new TRPCError({ code: 'BAD_REQUEST', message: '2FA already enabled.' });
       }
 
-      const checkSession = await this.config.prisma.session.findFirst({
-        where: { userId, id: sessionId },
-        select: { deviceId: true }
-      });
-
-      if (!checkSession?.deviceId) {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: 'You must be logged in on mobile to enable 2FA.'
+      if (this.config.features.twoFaRequiresDevice !== false) {
+        const checkSession = await this.config.prisma.session.findFirst({
+          where: { userId, id: sessionId },
+          select: { deviceId: true }
         });
+
+        if (!checkSession?.deviceId) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'You must be logged in on mobile to enable 2FA.'
+          });
+        }
       }
 
       await this.config.prisma.session.updateMany({

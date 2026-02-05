@@ -14,6 +14,10 @@ tsconfig.*.json
 __tests__/
 coverage/
 .nyc_output/
+e2e/
+playwright.config.ts
+playwright-report/
+test-results/
 
 # Dev files
 .gitignore
