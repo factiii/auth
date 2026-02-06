@@ -23,6 +23,7 @@ export function createAuthGuard(config: AuthConfig, t: TrpcBuilder) {
     // This helps track when and why sessions are revoked to detect accidental deauths
     if (config.hooks?.logError) {
       try {
+        const cookieHeader = ctx.headers.cookie;
         const contextInfo = {
           reason: description,
           sessionId,
@@ -30,9 +31,20 @@ export function createAuthGuard(config: AuthConfig, t: TrpcBuilder) {
           ip: ctx.ip,
           userAgent: ctx.headers['user-agent'],
           ...(path ? { path } : {}),
-          timestamp: new Date().toISOString(),
+          // Diagnostic: was Cookie header present at all, and which keys were sent?
+          hasCookieHeader: Boolean(cookieHeader),
+          cookieKeys: cookieHeader
+            ? cookieHeader
+                .split(';')
+                .map((c) => c.trim().split('=')[0])
+                .filter(Boolean)
+            : [],
+          origin: ctx.headers.origin ?? null,
+          referer: ctx.headers.referer ?? null,
+          timestamp: new Date().toISOString()
         };
 
+        // Combine errorStack (if present) with context info
         const combinedStack = [
           errorStack ? `Error Stack:\n${errorStack}` : null,
           'Context:',
