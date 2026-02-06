@@ -353,16 +353,33 @@ export class TwoFaProcedureFactory {
 
         const device = await this.config.prisma.device.findFirst({
           where: {
-            ...(userId !== 0 && { users: { some: { id: userId } } }),
+            users: { some: { id: userId } },
             pushToken,
           },
           select: { id: true },
         });
 
         if (device) {
-          await this.config.prisma.device.delete({
-            where: { id: device.id },
+          await this.config.prisma.session.updateMany({
+            where: { userId, deviceId: device.id },
+            data: { deviceId: null },
           });
+
+          await this.config.prisma.device.update({
+            where: { id: device.id },
+            data: { users: { disconnect: { id: userId } } },
+          });
+
+          const remainingUsers = await this.config.prisma.device.findUnique({
+            where: { id: device.id },
+            select: { users: { select: { id: true }, take: 1 } },
+          });
+
+          if (!remainingUsers?.users.length) {
+            await this.config.prisma.device.delete({
+              where: { id: device.id },
+            });
+          }
         }
 
         return { deregistered: true };
