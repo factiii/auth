@@ -17,7 +17,6 @@ export const createContext = ({ req, res }: CreateHTTPContextOptions): TrpcConte
   headers: req.headers,
   userId: null,
   sessionId: null,
-  refreshToken: null,
   socketId: null,
   ip: getClientIp(req),
   res,

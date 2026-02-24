@@ -3,8 +3,8 @@ import { TRPCError } from '@trpc/server';
 import { type AuthConfig } from '../types/config';
 import { type TrpcBuilder, type TrpcContext } from '../types/trpc';
 import { defaultCookieSettings, defaultStorageKeys } from '../utilities/config';
-import { clearAuthCookies, parseAuthCookies } from '../utilities/cookies';
-import { isTokenExpiredError, isTokenInvalidError, verifyAccessToken } from '../utilities/jwt';
+import { clearAuthCookie, parseAuthCookie } from '../utilities/cookies';
+import { isTokenExpiredError, isTokenInvalidError, verifyAuthToken } from '../utilities/jwt';
 
 export function createAuthGuard(config: AuthConfig, t: TrpcBuilder) {
   const storageKeys = config.storageKeys ?? defaultStorageKeys;
@@ -17,10 +17,9 @@ export function createAuthGuard(config: AuthConfig, t: TrpcBuilder) {
     errorStack?: string | null,
     path?: string
   ) => {
-    clearAuthCookies(ctx.res, cookieSettings, storageKeys);
+    clearAuthCookie(ctx.res, cookieSettings, storageKeys);
 
     // Log session revocations for security auditing
-    // This helps track when and why sessions are revoked to detect accidental deauths
     if (config.hooks?.logError) {
       try {
         const cookieHeader = ctx.headers.cookie;
@@ -31,7 +30,6 @@ export function createAuthGuard(config: AuthConfig, t: TrpcBuilder) {
           ip: ctx.ip,
           userAgent: ctx.headers['user-agent'],
           ...(path ? { path } : {}),
-          // Diagnostic: was Cookie header present at all, and which keys were sent?
           hasCookieHeader: Boolean(cookieHeader),
           cookieKeys: cookieHeader
             ? cookieHeader
@@ -44,7 +42,6 @@ export function createAuthGuard(config: AuthConfig, t: TrpcBuilder) {
           timestamp: new Date().toISOString()
         };
 
-        // Combine errorStack (if present) with context info
         const combinedStack = [
           errorStack ? `Error Stack:\n${errorStack}` : null,
           'Context:',
@@ -88,9 +85,8 @@ export function createAuthGuard(config: AuthConfig, t: TrpcBuilder) {
   };
 
   const authGuard = t.middleware(async ({ ctx, meta, next, path }) => {
-    const cookies = parseAuthCookies(ctx.headers.cookie, storageKeys);
-    const authToken = cookies.accessToken;
-    const refreshToken = cookies.refreshToken;
+    const cookies = parseAuthCookie(ctx.headers.cookie, storageKeys);
+    const authToken = cookies.authToken;
     const userAgent = ctx.headers['user-agent'];
 
     if (!userAgent) {
@@ -103,31 +99,15 @@ export function createAuthGuard(config: AuthConfig, t: TrpcBuilder) {
     // If auth token is present, validate it
     if (authToken) {
       try {
-        const decodedToken = verifyAccessToken(authToken, {
+        const decodedToken = verifyAuthToken(authToken, {
           secret: config.secrets.jwt,
           ignoreExpiration: meta?.ignoreExpiration ?? false,
         });
-
-        // For refresh endpoint, require refresh token
-        if (path === 'auth.refresh' && !refreshToken) {
-          await revokeSession(
-            ctx,
-            decodedToken.id,
-            'Session revoked: No refresh token',
-            undefined,
-            path
-          );
-          throw new TRPCError({
-            message: 'Unauthorized',
-            code: 'UNAUTHORIZED',
-          });
-        }
 
         // Find session in database
         const session = await config.prisma.session.findUnique({
           where: {
             id: decodedToken.id,
-            ...(path === 'auth.refresh' ? { refreshToken } : {}),
           },
           select: {
             userId: true,
@@ -237,7 +217,6 @@ export function createAuthGuard(config: AuthConfig, t: TrpcBuilder) {
             userId: session.userId,
             socketId: session.socketId,
             sessionId: session.id,
-            refreshToken,
           },
         });
       } catch (err: unknown) {

@@ -69,12 +69,16 @@ createAuthRouter({
     // ... 15+ lifecycle hooks
   },
   tokenSettings: {
-    accessTokenExpiry: '5m',           // JWT expiry (default: 5 minutes)
+    jwtExpiry: 2592000,                  // JWT expiry in seconds (default: 30 days)
     passwordResetExpiryMs: 3600000,    // Reset token expiry (default: 1 hour)
     otpValidityMs: 900000,             // OTP validity window (default: 15 minutes)
   },
 });
 ```
+
+## Auth Approach
+
+Rolling-window JWT. A single token is stored in an HTTP cookie. Calling `refresh` re-issues it with a fresh expiry (default: 30 days), sliding the session forward for active users.
 
 ## Procedures
 

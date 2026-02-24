@@ -1,7 +1,28 @@
 import { test, expect, type Page } from '@playwright/test';
 
-test.describe('Token Refresh', () => {
-  const createUserAndLogin = async (page: Page, timestamp: number) => {
+/** Decode a JWT and return the payload */
+const decodeJwt = (token: string): { exp?: number; iat?: number; id?: number; userId?: number } => {
+  const base64 = token.split('.')[1];
+  if (!base64) throw new Error('Invalid JWT');
+  return JSON.parse(Buffer.from(base64, 'base64url').toString());
+};
+
+/** Get the auth-token cookie value from the browser context */
+const getAuthToken = async (page: Page): Promise<string | null> => {
+  const cookies = await page.context().cookies();
+  return cookies.find((c) => c.name === 'auth-token')?.value ?? null;
+};
+
+/** Call auth.refresh via raw fetch and return whether it succeeded */
+const callRefresh = async (page: Page): Promise<boolean> => {
+  return page.evaluate(() =>
+    fetch('/api/auth.refresh', { credentials: 'include' }).then((r) => r.ok)
+  );
+};
+
+test.describe('Rolling Window Token Refresh', () => {
+  const createUserAndLogin = async (page: Page) => {
+    const timestamp = Date.now();
     const rand = Math.random().toString(36).slice(2, 8);
     const username = `tkref${timestamp}`.slice(0, 24) + rand;
     const email = `tokenrefresh${timestamp}${rand}@example.com`;
@@ -17,93 +38,80 @@ test.describe('Token Refresh', () => {
     return { username, email, password };
   };
 
-  test('should restore auth state on page reload', async ({ page }) => {
-    const timestamp = Date.now();
-    const { username, email } = await createUserAndLogin(page, timestamp);
+  test('refresh should issue a new JWT with a later exp', async ({ page }) => {
+    await createUserAndLogin(page);
 
-    // Reload the page
-    await page.reload();
+    const initialToken = await getAuthToken(page);
+    expect(initialToken).toBeTruthy();
+    const initialPayload = decodeJwt(initialToken!);
+    expect(initialPayload.exp).toBeDefined();
 
-    // Auth state should be restored via token refresh
-    await expect(page.locator('.dashboard')).toBeVisible();
-    await expect(page.locator('.welcome-card h2')).toContainText(`Welcome, ${username}`);
-    await expect(page.locator('.welcome-card .email')).toContainText(email);
+    // Wait so the new token will have a measurably later iat/exp
+    await page.waitForTimeout(2000);
+
+    expect(await callRefresh(page)).toBe(true);
+
+    const refreshedToken = await getAuthToken(page);
+    expect(refreshedToken).toBeTruthy();
+    expect(refreshedToken).not.toBe(initialToken);
+
+    const refreshedPayload = decodeJwt(refreshedToken!);
+    expect(refreshedPayload.exp).toBeDefined();
+
+    // The new exp should be later than the original
+    expect(refreshedPayload.exp!).toBeGreaterThan(initialPayload.exp!);
   });
 
-  test('should maintain user data after refresh', async ({ page }) => {
-    const timestamp = Date.now();
-    const { username, email } = await createUserAndLogin(page, timestamp);
+  test('refresh should preserve the same session ID', async ({ page }) => {
+    await createUserAndLogin(page);
 
-    // Reload multiple times to ensure token refresh works consistently
-    await page.reload();
-    await expect(page.locator('.dashboard')).toBeVisible();
+    const initialToken = await getAuthToken(page);
+    const initialPayload = decodeJwt(initialToken!);
 
-    await page.reload();
-    await expect(page.locator('.dashboard')).toBeVisible();
+    await page.waitForTimeout(1000);
+    await callRefresh(page);
 
-    // User data should still be correct
-    await expect(page.locator('.welcome-card h2')).toContainText(`Welcome, ${username}`);
-    await expect(page.locator('.welcome-card .email')).toContainText(email);
+    const refreshedToken = await getAuthToken(page);
+    const refreshedPayload = decodeJwt(refreshedToken!);
+
+    // Session ID and user ID should remain the same
+    expect(refreshedPayload.id).toBe(initialPayload.id);
+    expect(refreshedPayload.userId).toBe(initialPayload.userId);
   });
 
-  test('should show loading state during auth check', async ({ page }) => {
-    const timestamp = Date.now();
-    await createUserAndLogin(page, timestamp);
+  test('refreshed token lifetime should match the configured jwtExpiry', async ({ page }) => {
+    await createUserAndLogin(page);
 
-    await page.route('**/api/**', async (route) => {
-      // Add a small delay
-      await new Promise((resolve) => setTimeout(resolve, 100));
-      await route.continue();
-    });
+    await page.waitForTimeout(1000);
+    await callRefresh(page);
 
-    const reloadPromise = page.reload();
+    const refreshedToken = await getAuthToken(page);
+    const payload = decodeJwt(refreshedToken!);
 
-    // Should show loading state
-    await expect(page.locator('.loading-screen')).toBeVisible();
-
-    // Wait for reload to complete
-    await reloadPromise;
+    // jwtExpiry is 60s in e2e config, so exp - iat should be 60
+    const lifetime = payload.exp! - payload.iat!;
+    expect(lifetime).toBe(60);
   });
 
-  test('should redirect to login when not authenticated', async ({ page }) => {
-    // Go directly to home without any session
-    await page.goto('/');
 
-    // Should not show dashboard
-    await expect(page.locator('.dashboard')).not.toBeVisible();
+  test('cleared token should not allow refresh', async ({ page }) => {
+    await createUserAndLogin(page);
 
-    // Should show auth page (signup by default)
+    await page.context().clearCookies();
+    await page.reload();
+
+    // Should be on auth page, not dashboard
     await expect(page.locator('.auth-page')).toBeVisible();
-    await expect(page.locator('h1')).toHaveText('Create Account');
+    await expect(page.locator('.dashboard')).not.toBeVisible();
   });
 
-  test('should handle multiple rapid reloads gracefully', async ({ page }) => {
-    const timestamp = Date.now();
-    const { username } = await createUserAndLogin(page, timestamp);
+  test('should restore auth state on page reload within the window', async ({ page }) => {
+    const { username, email } = await createUserAndLogin(page);
 
-    // Do a few reloads with small waits between them
-    await page.reload();
-    await page.waitForLoadState('networkidle');
-    await page.reload();
-    await page.waitForLoadState('networkidle');
-
-    // Should still be authenticated (allow more time for session restoration)
-    await expect(page.locator('.dashboard')).toBeVisible({ timeout: 10000 });
-    await expect(page.locator('.welcome-card h2')).toContainText(`Welcome, ${username}`);
-  });
-
-  test('should recover session after network temporarily fails', async ({ page }) => {
-    const timestamp = Date.now();
-    const { username } = await createUserAndLogin(page, timestamp);
-
-    // Verify we're logged in
-    await expect(page.locator('.dashboard')).toBeVisible();
-
-    // Reload to verify session persists
     await page.reload();
 
-    // Should still be on dashboard
     await expect(page.locator('.dashboard')).toBeVisible();
     await expect(page.locator('.welcome-card h2')).toContainText(`Welcome, ${username}`);
+    await expect(page.locator('.welcome-card .email')).toContainText(email);
   });
 });

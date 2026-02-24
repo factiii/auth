@@ -1,4 +1,4 @@
-import { test, expect, type Page, type Browser } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 import { TOTP } from 'totp-generator';
 
 test.describe('Token Security', () => {
@@ -26,8 +26,8 @@ test.describe('Token Security', () => {
       // Get cookies and manipulate token expiration
       // This test verifies the server validates token expiration
       const cookies = await page.context().cookies();
-      const accessToken = cookies.find((c) => c.name === 'auth-at');
-      expect(accessToken).toBeDefined();
+      const sessionToken = cookies.find((c) => c.name === 'auth-token');
+      expect(sessionToken).toBeDefined();
 
       // Clear cookies and set expired token (by clearing and not refreshing)
       await page.context().clearCookies();
@@ -52,72 +52,6 @@ test.describe('Token Security', () => {
       // Navigate and verify refresh works
       await page.goto('/');
       await expect(page.locator('.dashboard')).toBeVisible();
-    });
-  });
-
-  test.describe('Refresh Token Rotation', () => {
-    test('MUST rotate refresh token on each use', async ({ page }) => {
-      await createUserAndLogin(page);
-
-      // Get initial cookies
-      const initialCookies = await page.context().cookies();
-      const initialRefreshToken = initialCookies.find((c) => c.name === 'auth-rt')?.value;
-      expect(initialRefreshToken).toBeDefined();
-
-      // Wait for access token to expire (5s + buffer)
-      await page.waitForTimeout(6000);
-
-      // Reload page - the trpc client will auto-refresh since token is expired
-      await page.reload();
-      await expect(page.locator('.dashboard')).toBeVisible();
-
-      // Get cookies after refresh
-      const newCookies = await page.context().cookies();
-      const newRefreshToken = newCookies.find((c) => c.name === 'auth-rt')?.value;
-
-      expect(newRefreshToken).not.toBe(initialRefreshToken);
-    });
-
-    test('MUST reject reused refresh tokens (replay attack prevention)', async ({ browser }) => {
-      // Create first context
-      const contextA = await browser.newContext();
-      const pageA = await contextA.newPage();
-
-      const timestamp = Date.now();
-      const rand = Math.random().toString(36).slice(2, 8);
-      const username = `replay${timestamp}${rand}`;
-      const email = `replay${timestamp}${rand}@example.com`;
-      const password = 'ReplayPwd123';
-
-      // Sign up in context A
-      await pageA.goto('/');
-      await pageA.fill('#username', username);
-      await pageA.fill('#email', email);
-      await pageA.fill('#password', password);
-      await pageA.click('#submit-btn');
-      await expect(pageA.locator('.dashboard')).toBeVisible();
-
-      // Capture the refresh token
-      const cookies = await contextA.cookies();
-      const refreshToken = cookies.find((c) => c.name === 'auth-rt');
-      expect(refreshToken).toBeDefined();
-
-      // Create a new context and try to use the captured refresh token
-      const contextB = await browser.newContext();
-
-      // Copy cookies to context B (simulating token theft/replay)
-      if (refreshToken) {
-        await contextB.addCookies([{
-          ...refreshToken,
-          domain: 'localhost',
-        }]);
-      }
-
-      const pageB = await contextB.newPage();
-      await pageB.goto('/');
-
-      await contextA.close();
-      await contextB.close();
     });
   });
 
@@ -328,7 +262,7 @@ test.describe('Token Security', () => {
       // Clear cookies and set a malformed token
       await page.context().clearCookies();
       await page.context().addCookies([{
-        name: 'auth-at',
+        name: 'auth-token',
         value: 'this-is-not-a-valid-jwt-token',
         domain: 'localhost',
         path: '/',
@@ -346,11 +280,11 @@ test.describe('Token Security', () => {
       await createUserAndLogin(page);
 
       const cookies = await page.context().cookies();
-      const accessToken = cookies.find((c) => c.name === 'auth-at');
-      expect(accessToken).toBeDefined();
+      const sessionToken = cookies.find((c) => c.name === 'auth-token');
+      expect(sessionToken).toBeDefined();
 
       // Tamper with the token by modifying the payload
-      const parts = accessToken!.value.split('.');
+      const parts = sessionToken!.value.split('.');
       if (parts.length === 3) {
         // Decode payload, modify, re-encode (without proper signature)
         const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString());
@@ -360,7 +294,7 @@ test.describe('Token Security', () => {
 
         await page.context().clearCookies();
         await page.context().addCookies([{
-          name: 'auth-at',
+          name: 'auth-token',
           value: tamperedToken,
           domain: 'localhost',
           path: '/',
@@ -382,7 +316,7 @@ test.describe('Token Security', () => {
 
       await page.context().clearCookies();
       await page.context().addCookies([{
-        name: 'auth-at',
+        name: 'auth-token',
         value: fakeToken,
         domain: 'localhost',
         path: '/',

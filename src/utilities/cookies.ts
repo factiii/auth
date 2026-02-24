@@ -1,37 +1,33 @@
 import type { CreateHTTPContextOptions } from '@trpc/server/adapters/standalone';
 
-import { type AuthCredentials, type CookieSettings } from '../types';
+import { type CookieSettings } from '../types';
 
 /**
- * Default storage keys for auth cookies
+ * Default storage key for auth cookie
  */
 export const DEFAULT_STORAGE_KEYS = {
-  ACCESS_TOKEN: 'auth-at',
-  REFRESH_TOKEN: 'auth-rt',
+  AUTH_TOKEN: 'auth-token',
 };
 
 /**
- * Parse auth tokens from cookie header
+ * Parse auth token from cookie header
  * @param cookieHeader - Raw cookie header string
  * @param storageKeys - Custom storage keys (optional)
- * @returns Parsed tokens
+ * @returns Parsed auth token
  */
-export function parseAuthCookies(
+export function parseAuthCookie(
   cookieHeader: string | undefined,
-  storageKeys: { accessToken: string; refreshToken: string } = {
-    accessToken: DEFAULT_STORAGE_KEYS.ACCESS_TOKEN,
-    refreshToken: DEFAULT_STORAGE_KEYS.REFRESH_TOKEN,
+  storageKeys: { authToken: string } = {
+    authToken: DEFAULT_STORAGE_KEYS.AUTH_TOKEN,
   }
-): { accessToken?: string; refreshToken?: string } {
+): { authToken?: string } {
   if (!cookieHeader) {
     return {};
   }
-  const accessToken = cookieHeader.split(`${storageKeys.accessToken}=`)[1]?.split(';')[0];
-  const refreshToken = cookieHeader.split(`${storageKeys.refreshToken}=`)[1]?.split(';')[0];
+  const authToken = cookieHeader.split(`${storageKeys.authToken}=`)[1]?.split(';')[0];
 
   return {
-    accessToken: accessToken || undefined,
-    refreshToken: refreshToken || undefined,
+    authToken: authToken || undefined,
   };
 }
 
@@ -73,104 +69,68 @@ function extractDomain(req: CreateHTTPContextOptions['res']['req']): string | un
 }
 
 /**
- * Set auth cookies on response
+ * Set auth cookie on response
  * @param res - HTTP response object
- * @param credentials - Access and refresh tokens
+ * @param authToken - Auth JWT token
  * @param settings - Cookie settings
  * @param storageKeys - Storage key names
  */
-export function setAuthCookies(
+export function setAuthCookie(
   res: CreateHTTPContextOptions['res'],
-  credentials: Partial<AuthCredentials>,
+  authToken: string,
   settings: Partial<CookieSettings>,
-  storageKeys: { accessToken: string; refreshToken: string } = {
-    accessToken: DEFAULT_STORAGE_KEYS.ACCESS_TOKEN,
-    refreshToken: DEFAULT_STORAGE_KEYS.REFRESH_TOKEN,
+  storageKeys: { authToken: string } = {
+    authToken: DEFAULT_STORAGE_KEYS.AUTH_TOKEN,
   }
 ): void {
-  const cookies: string[] = [];
   const domain = settings.domain ?? extractDomain(res.req);
 
   const expiresDate = settings.maxAge
     ? new Date(Date.now() + settings.maxAge * 1000).toUTCString()
     : undefined;
 
-  if (credentials.refreshToken) {
-    const refreshCookie = [
-      `${storageKeys.refreshToken}=${credentials.refreshToken}`,
-      'HttpOnly',
-      settings.secure ? 'Secure=true' : '',
-      `SameSite=${settings.sameSite}`,
-      `Path=${settings.refreshTokenPath}`,
-      domain ? `Domain=${domain}` : '',
-      `Expires=${expiresDate}`,
-    ]
-      .filter(Boolean)
-      .join('; ');
+  const cookie = [
+    `${storageKeys.authToken}=${authToken}`,
+    settings.httpOnly ? 'HttpOnly' : '',
+    settings.secure ? 'Secure=true' : '',
+    `SameSite=${settings.sameSite}`,
+    `Path=${settings.path ?? '/'}`,
+    domain ? `Domain=${domain}` : '',
+    expiresDate ? `Expires=${expiresDate}` : '',
+  ]
+    .filter(Boolean)
+    .join('; ');
 
-    cookies.push(refreshCookie);
-  }
-
-  if (credentials.accessToken) {
-    const accessCookie = [
-      `${storageKeys.accessToken}=${credentials.accessToken}`,
-      settings.secure ? 'Secure=true' : '',
-      `SameSite=${settings.sameSite}`,
-      `Path=${settings.accessTokenPath}`,
-      domain ? `Domain=${domain}` : '',
-      `Expires=${expiresDate}`,
-    ]
-      .filter(Boolean)
-      .join('; ');
-
-    cookies.push(accessCookie);
-  }
-
-  if (cookies.length > 0) {
-    res.setHeader('Set-Cookie', cookies);
-  }
+  res.setHeader('Set-Cookie', cookie);
 }
 
 /**
- * Clear auth cookies (for logout)
+ * Clear auth cookie (for logout)
  * @param res - HTTP response object
  * @param settings - Cookie settings
  * @param storageKeys - Storage key names
  */
-export function clearAuthCookies(
+export function clearAuthCookie(
   res: CreateHTTPContextOptions['res'],
   settings: Partial<CookieSettings>,
-  storageKeys: { accessToken: string; refreshToken: string } = {
-    accessToken: DEFAULT_STORAGE_KEYS.ACCESS_TOKEN,
-    refreshToken: DEFAULT_STORAGE_KEYS.REFRESH_TOKEN,
+  storageKeys: { authToken: string } = {
+    authToken: DEFAULT_STORAGE_KEYS.AUTH_TOKEN,
   }
 ): void {
   const domain = extractDomain(res.req);
   const expiredDate = new Date(0).toUTCString();
 
-  const cookies = [
-    [
-      `${storageKeys.refreshToken}=destroy`,
-      'HttpOnly',
-      settings.secure ? 'Secure=true' : '',
-      `SameSite=${settings.sameSite}`,
-      `Path=${settings.refreshTokenPath}`,
-      domain ? `Domain=${domain}` : '',
-      `Expires=${expiredDate}`,
-    ]
-      .filter(Boolean)
-      .join('; '),
-    [
-      `${storageKeys.accessToken}=destroy`,
-      settings.secure ? 'Secure=true' : '',
-      `SameSite=${settings.sameSite}`,
-      `Path=${settings.accessTokenPath}`,
-      domain ? `Domain=${domain}` : '',
-      `Expires=${expiredDate}`,
-    ]
-      .filter(Boolean)
-      .join('; '),
-  ];
+  const cookie = [
+    `${storageKeys.authToken}=destroy`,
+    settings.httpOnly ? 'HttpOnly' : '',
+    settings.secure ? 'Secure=true' : '',
+    `SameSite=${settings.sameSite}`,
+    `Path=${settings.path ?? '/'}`,
+    domain ? `Domain=${domain}` : '',
+    `Expires=${expiredDate}`,
+  ]
+    .filter(Boolean)
+    .join('; ');
 
-  res.setHeader('Set-Cookie', cookies);
+  res.setHeader('Set-Cookie', cookie);
 }

@@ -20,7 +20,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | null>(null);
 
 function hasAccessToken(): boolean {
-  return document.cookie.includes('auth-at=');
+  return document.cookie.includes('auth-token=');
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {

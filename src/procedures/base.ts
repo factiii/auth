@@ -1,14 +1,11 @@
-import { randomUUID } from 'node:crypto';
-
 import { TRPCError } from '@trpc/server';
-import { type SignOptions } from 'jsonwebtoken';
 
 import { type AuthProcedure, type BaseProcedure } from '../types/trpc';
 import { cleanBase32String, verifyTotp } from '../utilities';
 import { detectBrowser } from '../utilities/browser';
 import type { ResolvedAuthConfig } from '../utilities/config';
-import { clearAuthCookies, setAuthCookies } from '../utilities/cookies';
-import { createAccessToken } from '../utilities/jwt';
+import { clearAuthCookie, setAuthCookie } from '../utilities/cookies';
+import { createAuthToken } from '../utilities/jwt';
 import { comparePassword, hashPassword } from '../utilities/password';
 import type { SchemaExtensions } from '../types/hooks';
 import {
@@ -107,7 +104,6 @@ export class BaseProcedureFactory<TExtensions extends SchemaExtensions = {}> {
         await this.config.hooks.onUserCreated(user.id, typedInput);
       }
 
-      const refreshToken = randomUUID();
       const extraSessionData = this.config.hooks?.getSessionData
         ? await this.config.hooks.getSessionData(typedInput)
         : {};
@@ -117,27 +113,26 @@ export class BaseProcedureFactory<TExtensions extends SchemaExtensions = {}> {
           userId: user.id,
           browserName: detectBrowser(userAgent),
           socketId: null,
-          refreshToken,
           ...extraSessionData,
         },
-        select: { id: true, refreshToken: true, userId: true },
+        select: { id: true, userId: true },
       });
 
       if (this.config.hooks?.onSessionCreated) {
         await this.config.hooks.onSessionCreated(session.id, typedInput);
       }
 
-      const accessToken = createAccessToken(
+      const authToken = createAuthToken(
         { id: session.id, userId: session.userId, verifiedHumanAt: null },
         {
           secret: this.config.secrets.jwt,
-          expiresIn: this.config.tokenSettings.accessTokenExpiry as SignOptions['expiresIn'],
+          expiresIn: this.config.tokenSettings.jwtExpiry,
         }
       );
 
-      setAuthCookies(
+      setAuthCookie(
         ctx.res,
-        { accessToken, refreshToken: session.refreshToken! },
+        authToken,
         this.config.cookieSettings,
         this.config.storageKeys
       );
@@ -244,20 +239,14 @@ export class BaseProcedureFactory<TExtensions extends SchemaExtensions = {}> {
         }
 
         if (!validCode) {
-          const checkOTP = await this.config.prisma.oTPBasedLogin.findFirst({
-            where: {
-              code: Number(code),
-              userId: user.id,
-              disabled: false,
-              createdAt: { gte: new Date(Date.now() - this.config.tokenSettings.otpValidityMs) },
-            },
+          const checkOTP = await this.config.prisma.oTP.findUnique({
+            where: { userId: user.id },
           });
 
-          if (checkOTP) {
+          if (checkOTP && checkOTP.code === Number(code) && checkOTP.expiredAt >= new Date()) {
             validCode = true;
-            await this.config.prisma.oTPBasedLogin.updateMany({
-              where: { code: Number(code) },
-              data: { disabled: true },
+            await this.config.prisma.oTP.delete({
+              where: { userId: user.id },
             });
           }
         }
@@ -270,7 +259,6 @@ export class BaseProcedureFactory<TExtensions extends SchemaExtensions = {}> {
         }
       }
 
-      const refreshToken = randomUUID();
       const extraSessionData = this.config.hooks?.getSessionData
         ? await this.config.hooks.getSessionData(typedInput)
         : {};
@@ -280,12 +268,10 @@ export class BaseProcedureFactory<TExtensions extends SchemaExtensions = {}> {
           userId: user.id,
           browserName: detectBrowser(userAgent),
           socketId: null,
-          refreshToken,
           ...extraSessionData,
         },
         select: {
           id: true,
-          refreshToken: true,
           userId: true,
           socketId: true,
           browserName: true,
@@ -305,17 +291,17 @@ export class BaseProcedureFactory<TExtensions extends SchemaExtensions = {}> {
         await this.config.hooks.onSessionCreated(session.id, typedInput);
       }
 
-      const accessToken = createAccessToken(
+      const authToken = createAuthToken(
         { id: session.id, userId: session.userId, verifiedHumanAt: user.verifiedHumanAt },
         {
           secret: this.config.secrets.jwt,
-          expiresIn: this.config.tokenSettings.accessTokenExpiry as SignOptions['expiresIn'],
+          expiresIn: this.config.tokenSettings.jwtExpiry,
         }
       );
 
-      setAuthCookies(
+      setAuthCookie(
         ctx.res,
-        { accessToken, refreshToken: session.refreshToken! },
+        authToken,
         this.config.cookieSettings,
         this.config.storageKeys
       );
@@ -328,7 +314,7 @@ export class BaseProcedureFactory<TExtensions extends SchemaExtensions = {}> {
   }
 
   private logout() {
-    return this.procedure.mutation(async ({ ctx }) => {
+    return this.authProcedure.meta({ ignoreExpiration: true }).mutation(async ({ ctx }) => {
       const { userId, sessionId } = ctx;
 
       if (sessionId) {
@@ -349,20 +335,19 @@ export class BaseProcedureFactory<TExtensions extends SchemaExtensions = {}> {
         }
       }
 
-      clearAuthCookies(ctx.res, this.config.cookieSettings, this.config.storageKeys);
+      clearAuthCookie(ctx.res, this.config.cookieSettings, this.config.storageKeys);
 
       return { success: true };
     });
   }
 
   private refresh() {
-    return this.authProcedure.meta({ ignoreExpiration: true }).query(async ({ ctx }) => {
+    return this.authProcedure.query(async ({ ctx }) => {
       const session = await this.config.prisma.session.update({
         where: { id: ctx.sessionId },
-        data: { refreshToken: randomUUID(), lastUsed: new Date() },
+        data: { lastUsed: new Date() },
         select: {
           id: true,
-          refreshToken: true,
           userId: true,
           user: { select: { verifiedHumanAt: true } },
         },
@@ -372,17 +357,17 @@ export class BaseProcedureFactory<TExtensions extends SchemaExtensions = {}> {
         this.config.hooks.onRefresh(session.userId).catch(() => {});
       }
 
-      const accessToken = createAccessToken(
+      const authToken = createAuthToken(
         { id: session.id, userId: session.userId, verifiedHumanAt: session.user.verifiedHumanAt },
         {
           secret: this.config.secrets.jwt,
-          expiresIn: this.config.tokenSettings.accessTokenExpiry as SignOptions['expiresIn'],
+          expiresIn: this.config.tokenSettings.jwtExpiry,
         }
       );
 
-      setAuthCookies(
+      setAuthCookie(
         ctx.res,
-        { accessToken, refreshToken: session.refreshToken! },
+        authToken,
         this.config.cookieSettings,
         this.config.storageKeys
       );

@@ -1,17 +1,17 @@
-import jwt, { type SignOptions } from 'jsonwebtoken';
+import jwt from 'jsonwebtoken';
 
 import type { JwtPayload } from '../types';
 
 /**
- * Options for creating access tokens
+ * Options for creating auth tokens
  */
 export interface CreateTokenOptions {
   secret: string;
-  expiresIn: SignOptions['expiresIn'];
+  expiresIn: number; // seconds
 }
 
 /**
- * Options for verifying access tokens
+ * Options for verifying auth tokens
  */
 export interface VerifyTokenOptions {
   secret: string;
@@ -19,12 +19,12 @@ export interface VerifyTokenOptions {
 }
 
 /**
- * Create a JWT access token
+ * Create a JWT auth token
  * @param payload - Token payload containing session and user info
  * @param options - Token creation options
  * @returns Signed JWT token
  */
-export function createAccessToken(
+export function createAuthToken(
   payload: Omit<JwtPayload, 'exp' | 'iat'>,
   options: CreateTokenOptions
 ): string {
@@ -34,13 +34,13 @@ export function createAccessToken(
 }
 
 /**
- * Verify and decode a JWT access token
+ * Verify and decode a JWT auth token
  * @param token - JWT token to verify
  * @param options - Verification options
  * @returns Decoded token payload
  * @throws Error if token is invalid or expired
  */
-export function verifyAccessToken(token: string, options: VerifyTokenOptions): JwtPayload {
+export function verifyAuthToken(token: string, options: VerifyTokenOptions): JwtPayload {
   return jwt.verify(token, options.secret, {
     ignoreExpiration: options.ignoreExpiration ?? false,
   }) as JwtPayload;

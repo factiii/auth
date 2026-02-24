@@ -9,7 +9,7 @@ export type { OAuthKeys } from './oauth';
  * Default token settings
  */
 export const defaultTokenSettings: TokenSettings = {
-  accessTokenExpiry: '5m',
+  jwtExpiry: 30 * 24 * 60 * 60, // 30 days in seconds
   passwordResetExpiryMs: 60 * 60 * 1000, // 1 hour
   otpValidityMs: 15 * 60 * 1000, // 15 minutes
 };
@@ -20,18 +20,16 @@ export const defaultTokenSettings: TokenSettings = {
 export const defaultCookieSettings: CookieSettings = {
   secure: true,
   sameSite: 'Strict',
-  httpOnly: true,
-  accessTokenPath: '/',
-  refreshTokenPath: '/api/trpc/auth.refresh',
-  maxAge: 365 * 24 * 60 * 60, // 1 year in seconds
+  httpOnly: false,
+  path: '/',
+  maxAge: 30 * 24 * 60 * 60, // 30 days in seconds
 };
 
 /**
  * Default storage keys
  */
 export const defaultStorageKeys = {
-  accessToken: 'auth-at',
-  refreshToken: 'auth-rt',
+  authToken: 'auth-token',
 };
 
 /**

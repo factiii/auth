@@ -98,13 +98,6 @@ export const twoFaVerifySchema = z.object({
 });
 
 /**
- * Schema for 2FA setup
- */
-export const twoFaSetupSchema = z.object({
-  code: z.string().min(6, { message: 'Verification code is required' }),
-});
-
-/**
  * Schema for 2FA reset request
  */
 export const twoFaResetSchema = z.object({
@@ -125,13 +118,6 @@ export const twoFaResetVerifySchema = z.object({
  */
 export const verifyEmailSchema = z.object({
   code: z.string().min(1, { message: 'Verification code is required' }),
-});
-
-/**
- * Schema for resending verification email
- */
-export const resendVerificationSchema = z.object({
-  email: z.string().email().optional(),
 });
 
 /**
@@ -168,32 +154,10 @@ export const disableTwofaSchema = z.object({
 });
 
 /**
- * Schema for logout
- */
-export const logoutSchema = z.object({
-  allDevices: z.boolean().optional().default(false),
-});
-
-/**
  * Schema for ending all sessions
  */
 export const endAllSessionsSchema = z.object({
   skipCurrentSession: z.boolean().optional().default(true),
-});
-
-/**
- * Schema for OTP-based login request
- */
-export const otpLoginRequestSchema = z.object({
-  email: z.string().email({ message: 'Invalid email address' }),
-});
-
-/**
- * Schema for OTP-based login verification
- */
-export const otpLoginVerifySchema = z.object({
-  email: z.string().email(),
-  code: z.number().min(100000).max(999999),
 });
 
 export type SignupInput = z.infer<typeof signupSchema>;
@@ -203,7 +167,6 @@ export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
 export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
 export type TwoFaVerifyInput = z.infer<typeof twoFaVerifySchema>;
 export type VerifyEmailInput = z.infer<typeof verifyEmailSchema>;
-export type LogoutInput = z.infer<typeof logoutSchema>;
 
 /** Schemas used by auth procedures */
 export interface AuthSchemas {

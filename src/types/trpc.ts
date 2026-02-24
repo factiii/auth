@@ -15,7 +15,6 @@ export type Meta = {
 export interface TrpcContext {
   userId: number | null;
   sessionId: number | null;
-  refreshToken: string | null;
   socketId: string | null;
   headers: CreateHTTPContextOptions['req']['headers'];
   res: CreateHTTPContextOptions['res']; // Allows us to stream responses

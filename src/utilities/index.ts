@@ -1,16 +1,16 @@
 export { detectBrowser, isMobileDevice, isNativeApp } from './browser';
 export {
-  clearAuthCookies,
+  clearAuthCookie,
   DEFAULT_STORAGE_KEYS,
-  parseAuthCookies,
-  setAuthCookies,
+  parseAuthCookie,
+  setAuthCookie,
 } from './cookies';
 export {
-  createAccessToken,
+  createAuthToken,
   decodeToken,
   isTokenExpiredError,
   isTokenInvalidError,
-  verifyAccessToken,
+  verifyAuthToken,
 } from './jwt';
 export type { OAuthKeys, OAuthProvider, OAuthResult } from './oauth';
 export { createOAuthVerifier, OAuthVerificationError } from './oauth';

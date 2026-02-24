@@ -1,11 +1,8 @@
-import { randomUUID } from 'node:crypto';
-
 import { TRPCError } from '@trpc/server';
-import { type SignOptions } from 'jsonwebtoken';
 
 import type { SchemaExtensions } from '../types/hooks';
 import { type BaseProcedure } from '../types/trpc';
-import { createAccessToken, detectBrowser, setAuthCookies } from '../utilities';
+import { createAuthToken, detectBrowser, setAuthCookie } from '../utilities';
 import type { ResolvedAuthConfig } from '../utilities/config';
 import { createOAuthVerifier, type OAuthProvider, type OAuthResult } from '../utilities/oauth';
 import { type CreatedSchemas, type OAuthSchemaInput } from '../validators';
@@ -130,7 +127,6 @@ export class OAuthLoginProcedureFactory<TExtensions extends SchemaExtensions = {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'Your account has been banned.' });
       }
 
-      const refreshToken = randomUUID();
       const extraSessionData = this.config.hooks?.getSessionData
         ? await this.config.hooks.getSessionData(typedInput)
         : {};
@@ -140,12 +136,10 @@ export class OAuthLoginProcedureFactory<TExtensions extends SchemaExtensions = {
           userId: user.id,
           browserName: detectBrowser(userAgent),
           socketId: null,
-          refreshToken,
           ...extraSessionData,
         },
         select: {
           id: true,
-          refreshToken: true,
           userId: true,
           socketId: true,
           browserName: true,
@@ -165,17 +159,17 @@ export class OAuthLoginProcedureFactory<TExtensions extends SchemaExtensions = {
         await this.config.hooks.onSessionCreated(session.id, typedInput);
       }
 
-      const accessToken = createAccessToken(
+      const authToken = createAuthToken(
         { id: session.id, userId: session.userId, verifiedHumanAt: user.verifiedHumanAt ?? null },
         {
           secret: this.config.secrets.jwt,
-          expiresIn: this.config.tokenSettings.accessTokenExpiry as SignOptions['expiresIn'],
+          expiresIn: this.config.tokenSettings.jwtExpiry,
         }
       );
 
-      setAuthCookies(
+      setAuthCookie(
         ctx.res,
-        { accessToken, refreshToken: session.refreshToken! },
+        authToken,
         this.config.cookieSettings,
         this.config.storageKeys
       );

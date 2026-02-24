@@ -12,8 +12,8 @@ export type { SchemaExtensions } from './hooks';
  * Token and OTP expiry settings
  */
 export interface TokenSettings {
-  /** Access token expiry (e.g., '5m', '1h') */
-  accessTokenExpiry: string;
+  /** JWT expiry in seconds (default: 30 days) */
+  jwtExpiry: number;
   /** Password reset token expiry in ms (default: 1 hour) */
   passwordResetExpiryMs: number;
   /** OTP validity window in ms (default: 15 minutes) */
@@ -98,8 +98,7 @@ export interface AuthConfig<TExtensions extends SchemaExtensions = {}> {
    * Cookie storage keys
    */
   storageKeys?: {
-    accessToken: string;
-    refreshToken: string;
+    authToken: string;
   };
 
   /**

@@ -15,33 +15,6 @@ export interface JwtPayload {
 }
 
 /**
- * Credentials returned after successful authentication
- */
-export interface AuthCredentials {
-  accessToken: string;
-  refreshToken: string;
-}
-/**
- * Device information for session tracking
- */
-export interface DeviceInfo {
-  id?: number;
-  pushToken?: string;
-}
-
-/**
- * Browser detection result
- */
-export type BrowserName =
-  | 'Chrome'
-  | 'Firefox'
-  | 'Safari'
-  | 'Edge'
-  | 'Opera'
-  | 'Mobile App'
-  | 'Unknown';
-
-/**
  * Cookie settings for auth tokens
  */
 export interface CookieSettings {
@@ -49,24 +22,7 @@ export interface CookieSettings {
   sameSite: 'Strict' | 'Lax' | 'None';
   domain?: string;
   httpOnly: boolean;
-  accessTokenPath: string;
-  refreshTokenPath: string;
+  path: string;
   maxAge: number; // in seconds
 }
 
-/**
- * JWT error type
- */
-export interface JwtError extends Error {
-  name: 'TokenExpiredError' | 'JsonWebTokenError' | 'NotBeforeError';
-}
-
-/**
- * Check if an error is a JWT error
- */
-export function isJwtError(error: unknown): error is JwtError {
-  return (
-    error instanceof Error &&
-    ['TokenExpiredError', 'JsonWebTokenError', 'NotBeforeError'].includes(error.name)
-  );
-}

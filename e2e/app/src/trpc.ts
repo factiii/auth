@@ -3,59 +3,26 @@ import { observable } from '@trpc/server/observable';
 import superjson from 'superjson';
 import type { AppRouter } from '../../server/trpc';
 
-const parseJwt = (accessToken: string): { exp?: number; userId?: number } | null => {
-  const base64Url = accessToken.split('.')[1];
-  const base64 = base64Url?.replace(/-/g, '+').replace(/_/g, '/');
-  if (!base64) return null;
-  const jsonPayload = decodeURIComponent(
-    atob(base64)
-      .split('')
-      .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-      .join('')
-  );
-  return JSON.parse(jsonPayload);
-};
-
 const getAccessToken = () => {
   const cookies = typeof document === 'undefined' ? '' : document.cookie;
-  if (!cookies.includes('auth-at=')) return '';
-  return cookies.split('auth-at=')[1]?.split(';')[0] || '';
+  if (!cookies.includes('auth-token=')) return '';
+  return cookies.split('auth-token=')[1]?.split(';')[0] || '';
 };
 
 class ClientService {
   client: TRPCClient<AppRouter>;
   refreshLink: TRPCLink<AppRouter>;
-  tokenExpiry: number | null = null;
   refreshingPromise: Promise<boolean> | null = null;
+  lastRefreshedAt = 0;
 
   constructor() {
-    void this.setTokenExpiry();
-
     this.refreshLink = () => {
       return ({ next, op }) => {
         return observable((observer) => {
           const executeRequest = async () => {
-            if (
-              this.tokenExpiry &&
-              Date.now() > this.tokenExpiry &&
-              op.path !== 'auth.refresh'
-            ) {
-              if (!this.refreshingPromise) {
-                this.refreshingPromise = this.client.auth.refresh
-                  .query()
-                  .then(() => {
-                    void this.setTokenExpiry();
-                    this.refreshingPromise = null;
-                    return true;
-                  })
-                  .catch(() => {
-                    this.refreshingPromise = null;
-                    return false;
-                  });
-              }
-
-              const refreshSuccess = await this.refreshingPromise;
-              if (!refreshSuccess) {
+            if (op.path !== 'auth.refresh') {
+              const valid = await this.ensureTokenValidity();
+              if (valid === false) {
                 observer.error(new TRPCClientError('Refresh failed'));
                 return;
               }
@@ -68,7 +35,7 @@ class ClientService {
                   op.path.includes('login') ||
                   op.path.includes('register')
                 ) {
-                  void this.setTokenExpiry();
+                  this.lastRefreshedAt = Date.now();
                 }
                 observer.next(value);
               },
@@ -103,17 +70,39 @@ class ClientService {
     });
   }
 
-  async setTokenExpiry() {
-    const at = getAccessToken();
-    const exp = parseJwt(at)?.exp;
-    if (exp && !isNaN(exp)) {
-      this.tokenExpiry = exp * 1000 - 1000; // 1 second before actual expiry
+  async ensureTokenValidity(): Promise<boolean> {
+    if (!getAccessToken()) return true;
+
+    const interval = 10_000; // 10 seconds for e2e testing
+
+    if (Date.now() - this.lastRefreshedAt >= interval) {
+      return this.refresh();
     }
+
+    return true;
+  }
+
+  refresh(): Promise<boolean> {
+    if (this.refreshingPromise) return this.refreshingPromise;
+
+    this.refreshingPromise = this.client.auth.refresh
+      .query()
+      .then(() => {
+        this.refreshingPromise = null;
+        this.lastRefreshedAt = Date.now();
+        return true;
+      })
+      .catch(() => {
+        this.refreshingPromise = null;
+        return false;
+      });
+
+    return this.refreshingPromise;
   }
 
   clearTokens() {
-    this.tokenExpiry = null;
     this.refreshingPromise = null;
+    this.lastRefreshedAt = 0;
   }
 }
 

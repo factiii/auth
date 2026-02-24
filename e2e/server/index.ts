@@ -52,7 +52,6 @@ const createContext = ({ req, res }: CreateHTTPContextOptions): TrpcContext => (
   headers: req.headers,
   userId: null,
   sessionId: null,
-  refreshToken: null,
   socketId: null,
   ip: getClientIp(req),
   res
@@ -80,15 +79,14 @@ const createContext = ({ req, res }: CreateHTTPContextOptions): TrpcContext => (
       emailVerification: true,
     },
     tokenSettings: {
-      accessTokenExpiry: '5s', // 5 seconds for testing
+      jwtExpiry: 60, // 60 seconds for testing
       passwordResetExpiryMs: 60 * 60 * 1000, // 1 hour
       otpValidityMs: 15 * 60 * 1000, // 15 minutes
     },
     cookieSettings: {
       secure: false,
       sameSite: 'Lax',
-      accessTokenPath: '/',
-      refreshTokenPath: '/api/auth.refresh',
+      path: '/',
     },
     emailService: createTestEmailAdapter(),
   });

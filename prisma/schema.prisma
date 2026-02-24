@@ -59,7 +59,7 @@ model User {
   // Relations
   sessions       Session[]
   passwordReset  PasswordReset[]
-  otpsForLogin   OTPBasedLogin[]
+  otps           OTP[]
   devices        Device[]        @relation("devices")
   admin          Admin?
 }
@@ -69,18 +69,17 @@ model User {
 // ==============================================================================
 
 model Session {
-  id           Int       @id @default(autoincrement())
-  socketId     String?   @unique
-  twoFaSecret  String?   @unique
-  refreshToken String?   @unique
-  issuedAt     DateTime  @default(now())
-  browserName  String    @default("Unknown")
-  lastUsed     DateTime  @default(now()) @updatedAt
-  device       Device?   @relation(fields: [deviceId], references: [id])
-  deviceId     Int?
-  userId       Int
-  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  revokedAt    DateTime?
+  id          Int       @id @default(autoincrement())
+  socketId    String?   @unique
+  twoFaSecret String?   @unique
+  issuedAt    DateTime  @default(now())
+  browserName String    @default("Unknown")
+  lastUsed    DateTime  @default(now()) @updatedAt
+  device      Device?   @relation(fields: [deviceId], references: [id])
+  deviceId    Int?
+  userId      Int
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  revokedAt   DateTime?
 
   @@index([userId])
   @@index([deviceId])
@@ -113,16 +112,15 @@ model PasswordReset {
 }
 
 // ==============================================================================
-// OTPBasedLogin Model
+// OTP Model
 // ==============================================================================
 
-model OTPBasedLogin {
-  id        Int      @id @default(autoincrement())
+model OTP {
   code      Int
-  userId    Int
+  expiredAt DateTime
+  userId    Int      @unique
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
-  disabled  Boolean  @default(false)
+
 }
 
 // ==============================================================================

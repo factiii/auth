@@ -240,8 +240,11 @@ export class TwoFaProcedureFactory {
       }
 
       const otp = generateOtp();
-      await this.config.prisma.oTPBasedLogin.create({
-        data: { userId: user.id, code: otp },
+      const expiredAt = new Date(Date.now() + this.config.tokenSettings.otpValidityMs);
+      await this.config.prisma.oTP.upsert({
+        where: { userId: user.id },
+        update: { code: otp, expiredAt },
+        create: { userId: user.id, code: otp, expiredAt },
       });
 
       if (this.config.emailService) {
@@ -266,22 +269,16 @@ export class TwoFaProcedureFactory {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'User not found' });
       }
 
-      const otp = await this.config.prisma.oTPBasedLogin.findFirst({
-        where: {
-          userId: user.id,
-          code,
-          disabled: false,
-          createdAt: { gte: new Date(Date.now() - this.config.tokenSettings.otpValidityMs) },
-        },
+      const otp = await this.config.prisma.oTP.findUnique({
+        where: { userId: user.id },
       });
 
-      if (!otp) {
+      if (!otp || otp.code !== code || otp.expiredAt < new Date()) {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'Invalid or expired OTP' });
       }
 
-      await this.config.prisma.oTPBasedLogin.update({
-        where: { id: otp.id },
-        data: { disabled: true },
+      await this.config.prisma.oTP.delete({
+        where: { userId: user.id },
       });
 
       await this.config.prisma.user.update({
@@ -344,7 +341,6 @@ export class TwoFaProcedureFactory {
 
   private deregisterPushToken() {
     return this.authProcedure
-      .meta({ ignoreExpiration: true })
       .input(deregisterPushTokenSchema)
       .mutation(async ({ ctx, input }) => {
         this.checkConfig();

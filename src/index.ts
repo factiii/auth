@@ -21,17 +21,17 @@ export { createConsoleEmailAdapter, createNoopEmailAdapter } from './adapters/em
 
 export { detectBrowser, isMobileDevice, isNativeApp } from './utilities/browser';
 export {
-  clearAuthCookies,
+  clearAuthCookie,
   DEFAULT_STORAGE_KEYS,
-  parseAuthCookies,
-  setAuthCookies,
+  parseAuthCookie,
+  setAuthCookie,
 } from './utilities/cookies';
 export {
-  createAccessToken,
+  createAuthToken,
   decodeToken,
   isTokenExpiredError,
   isTokenInvalidError,
-  verifyAccessToken,
+  verifyAuthToken,
 } from './utilities/jwt';
 export { comparePassword, hashPassword, validatePasswordStrength } from './utilities/password';
 export {
@@ -45,7 +45,6 @@ export {
 export type {
   ChangePasswordInput,
   LoginInput,
-  LogoutInput,
   OAuthLoginInput,
   ResetPasswordInput,
   SignupInput,
@@ -57,15 +56,11 @@ export {
   changePasswordSchema,
   endAllSessionsSchema,
   loginSchema,
-  logoutSchema,
   oAuthLoginSchema,
-  otpLoginRequestSchema,
-  otpLoginVerifySchema,
   requestPasswordResetSchema,
   resetPasswordSchema,
   signupSchema,
   twoFaResetSchema,
-  twoFaSetupSchema,
   twoFaVerifySchema,
   verifyEmailSchema,
 } from './validators';
