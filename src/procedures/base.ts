@@ -218,10 +218,10 @@ export class BaseProcedureFactory<TExtensions extends SchemaExtensions = {}> {
 
       if (user.twoFaEnabled && this.config.features?.twoFa) {
         if (!code) {
-          throw new TRPCError({
-            code: 'FORBIDDEN',
-            message: '2FA code required.',
-          });
+          return {
+            success: false,
+            requires2FA: true,
+          };
         }
 
         let validCode = false;
