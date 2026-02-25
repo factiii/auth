@@ -59,14 +59,13 @@ export function LoginPage() {
     dispatch({ type: 'SET_ERROR', payload: null });
 
     try {
-      await login(state.username, state.password, state.requires2FA ? state.twoFaCode : undefined);
+      const result = await login(state.username, state.password, state.requires2FA ? state.twoFaCode : undefined);
+      if (!result.success && result.requires2FA) {
+        dispatch({ type: 'SET_REQUIRES_2FA', payload: true });
+      }
     } catch (err) {
       const errorMessage = getErrorMessage(err);
-      if (errorMessage.toLowerCase().includes('2fa code required')) {
-        dispatch({ type: 'SET_REQUIRES_2FA', payload: true });
-      } else {
-        dispatch({ type: 'SET_ERROR', payload: errorMessage });
-      }
+      dispatch({ type: 'SET_ERROR', payload: errorMessage });
     } finally {
       dispatch({ type: 'SET_LOADING', payload: false });
     }

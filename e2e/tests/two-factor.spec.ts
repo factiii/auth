@@ -110,9 +110,9 @@ test.describe('Two-Factor Authentication', () => {
       await page.fill('#password', password);
       await page.click('#login-btn');
 
-      // Should show 2FA input
       await expect(page.locator('#twoFaCode')).toBeVisible();
       await expect(page.locator('.auth-subtitle')).toContainText('2FA code');
+      await expect(page.getByTestId('error')).not.toBeVisible();
     });
 
     test('should show error for invalid 2FA code', async ({ page }) => {

@@ -1,5 +1,10 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import type { inferRouterOutputs } from '@trpc/server';
 import { trpc, service, getErrorMessage } from '../trpc';
+import type { AppRouter } from '../../../server/trpc';
+
+type RouterOutputs = inferRouterOutputs<AppRouter>;
+type LoginResult = RouterOutputs['auth']['login'];
 
 interface User {
   id: number;
@@ -11,7 +16,7 @@ interface User {
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
-  login: (username: string, password: string, code?: string) => Promise<void>;
+  login: (username: string, password: string, code?: string) => Promise<LoginResult>;
   signup: (username: string, email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   setUser: (user: User | null) => void;
@@ -63,6 +68,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { user } = await trpc.me.query();
       if (user) initializeUser(user);
     }
+    return result;
   };
 
   const signup = async (username: string, email: string, password: string) => {
