@@ -196,4 +196,86 @@ test.describe('Password Reset - Complete', () => {
 
     await expect(page.locator('.dashboard')).toBeVisible();
   });
+
+  test('should delete all sessions after password reset', async ({ browser }) => {
+    const timestamp = Date.now();
+    const rand = Math.random().toString(36).slice(2, 8);
+    const username = `prs${timestamp}${rand}`;
+    const email = `prs${timestamp}${rand}@example.com`;
+    const password = 'OldPassword123';
+    const newPassword = 'NewPassword456';
+
+    // Create Session A and sign up
+    const contextA = await browser.newContext();
+    const pageA = await contextA.newPage();
+    await pageA.goto('/');
+    await pageA.fill('#username', username);
+    await pageA.fill('#email', email);
+    await pageA.fill('#password', password);
+    await pageA.click('#submit-btn');
+    await expect(pageA.locator('.dashboard')).toBeVisible();
+
+    // Log out from Session A
+    await pageA.click('button:has-text("Log Out")');
+    await expect(pageA.locator('.auth-page')).toBeVisible();
+
+    // Create Session B and log in
+    const contextB = await browser.newContext();
+    const pageB = await contextB.newPage();
+    await pageB.goto('/');
+    await pageB.click('button:has-text("Log in")');
+    await expect(pageB.locator('h1')).toHaveText('Welcome Back');
+    await pageB.fill('#username', username);
+    await pageB.fill('#password', password);
+    await pageB.click('#login-btn');
+    await expect(pageB.locator('.dashboard')).toBeVisible();
+
+    // Log in from Session A too (now both have active sessions)
+    await pageA.click('button:has-text("Log in")');
+    await expect(pageA.locator('h1')).toHaveText('Welcome Back');
+    await pageA.fill('#username', username);
+    await pageA.fill('#password', password);
+    await pageA.click('#login-btn');
+    await expect(pageA.locator('.dashboard')).toBeVisible();
+
+    // Use a third context to perform the password reset
+    const contextC = await browser.newContext();
+    const pageC = await contextC.newPage();
+
+    // Request password reset
+    await pageC.goto('/');
+    await pageC.click('button:has-text("Log in")');
+    await pageC.click('button:has-text("Forgot your password?")');
+    await pageC.fill('#email', email);
+    await pageC.click('button:has-text("Send Reset Link")');
+    await expect(pageC.locator('h1')).toHaveText('Check your email');
+
+    // Get the reset token
+    const response = await pageC.request.get(
+      `http://localhost:3457/test/tokens?email=${encodeURIComponent(email)}&type=passwordReset`
+    );
+    const data = await response.json();
+
+    // Reset the password
+    await pageC.goto(`/reset-password?token=${data.token}`);
+    await expect(pageC.locator('h1')).toHaveText('Set New Password', { timeout: 10000 });
+    await pageC.fill('#newPassword', newPassword);
+    await pageC.fill('#confirmPassword', newPassword);
+    await pageC.click('button:has-text("Reset Password")');
+    await expect(pageC.locator('h1')).toHaveText('Password Reset Complete', { timeout: 10000 });
+
+    // Verify Session A is now invalid
+    await pageA.reload();
+    await expect(pageA.locator('.dashboard')).not.toBeVisible();
+    await expect(pageA.locator('.auth-page')).toBeVisible();
+
+    // Verify Session B is now invalid
+    await pageB.reload();
+    await expect(pageB.locator('.dashboard')).not.toBeVisible();
+    await expect(pageB.locator('.auth-page')).toBeVisible();
+
+    await contextA.close();
+    await contextB.close();
+    await contextC.close();
+  });
 });

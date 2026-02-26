@@ -239,14 +239,14 @@ export class BaseProcedureFactory<TExtensions extends SchemaExtensions = {}> {
         }
 
         if (!validCode) {
-          const checkOTP = await this.config.prisma.oTP.findUnique({
-            where: { userId: user.id },
+          const checkOTP = await this.config.prisma.oTP.findFirst({
+            where: { userId: user.id, code: Number(code), expiresAt: { gte: new Date() } },
           });
 
-          if (checkOTP && checkOTP.code === Number(code) && checkOTP.expiredAt >= new Date()) {
+          if (checkOTP) {
             validCode = true;
             await this.config.prisma.oTP.delete({
-              where: { userId: user.id },
+              where: { id: checkOTP.id },
             });
           }
         }
@@ -568,10 +568,24 @@ export class BaseProcedureFactory<TExtensions extends SchemaExtensions = {}> {
 
       await this.config.prisma.passwordReset.delete({ where: { id: token } });
 
-      await this.config.prisma.session.updateMany({
+      const sessionsToDelete = await this.config.prisma.session.findMany({
         where: { userId: passwordReset.userId },
-        data: { revokedAt: new Date() },
+        select: { id: true, socketId: true, userId: true },
       });
+
+      await this.config.prisma.session.deleteMany({
+        where: { userId: passwordReset.userId },
+      });
+
+      for (const session of sessionsToDelete) {
+        if (this.config.hooks?.onSessionRevoked) {
+          await this.config.hooks.onSessionRevoked(
+            session.id,
+            session.socketId,
+            'Password reset'
+          );
+        }
+      }
 
       return { message: 'Password updated. Please log in with your new password.' };
     });
