@@ -568,16 +568,17 @@ export class BaseProcedureFactory<TExtensions extends SchemaExtensions = {}> {
 
       await this.config.prisma.passwordReset.delete({ where: { id: token } });
 
-      const sessionsToDelete = await this.config.prisma.session.findMany({
-        where: { userId: passwordReset.userId },
+      const sessionsToRevoke = await this.config.prisma.session.findMany({
+        where: { userId: passwordReset.userId, revokedAt: null },
         select: { id: true, socketId: true, userId: true },
       });
 
-      await this.config.prisma.session.deleteMany({
-        where: { userId: passwordReset.userId },
+      await this.config.prisma.session.updateMany({
+        where: { userId: passwordReset.userId, revokedAt: null },
+        data: { revokedAt: new Date() },
       });
 
-      for (const session of sessionsToDelete) {
+      for (const session of sessionsToRevoke) {
         if (this.config.hooks?.onSessionRevoked) {
           await this.config.hooks.onSessionRevoked(
             session.id,
