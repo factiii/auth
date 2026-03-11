@@ -221,6 +221,7 @@ export class BaseProcedureFactory<TExtensions extends SchemaExtensions = {}> {
           return {
             success: false,
             requires2FA: true,
+            userId: user.id,
           };
         }
 
